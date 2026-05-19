@@ -1,5 +1,5 @@
-// CONFIGURAÇÃO INICIAL DO SUPABASE
-const supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+// CONFIGURAÇÃO INICIAL DO SUPABASE (NOME CORRIGIDO PARA EVITAR CONFLITO GLOBAL)
+const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
 // VARIÁVEL GLOBAL PARA GUARDAR OS DADOS DO USUÁRIO LOGADO
 let usuarioLogado = null;
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         formLogin.addEventListener("submit", executarLogin);
     }
 
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     
     if (error || !session) {
         document.getElementById("tela-login").classList.remove("hidden");
@@ -50,7 +50,7 @@ async function executarLogin(e) {
     }
 
     // Chamar a autenticação do Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: email,
         password: senha
     });
@@ -58,7 +58,6 @@ async function executarLogin(e) {
     if (error) {
         console.error("Erro completo do Supabase:", error);
         
-        // Exibe o erro na caixa vermelha de forma crua para sabermos o que está travando
         if (error.message.includes("Invalid login credentials")) {
             erroDiv.innerText = "❌ E-mail ou senha incorretos!";
         } else {
@@ -87,7 +86,7 @@ function liberarAcessoAplicativo() {
 
 // FUNÇÃO PARA DESLOGAR DO APP (LOGOFF)
 async function executarLogoff() {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
     if (error) {
         alert("Erro ao sair: " + error.message);
     } else {
@@ -137,7 +136,7 @@ function mudarAba(aba) {
 // ==========================================
 async function verificarConexao() {
     try {
-        const { data, error } = await supabase.from('clientes').select('id').limit(1);
+        const { data, error } = await supabaseClient.from('clientes').select('id').limit(1);
         const status = document.getElementById('status-conexao');
         if (error) throw error;
         status.innerHTML = "✅ Conectado";
@@ -151,15 +150,15 @@ async function verificarConexao() {
 
 async function carregarDadosDashboard() {
     try {
-        const { count: qtdClientes } = await supabase.from('clientes').select('*', { count: 'exact', head: true });
-        const { count: qtdProdutos } = await supabase.from('produtos').select('*', { count: 'exact', head: true });
-        const { count: qtdOS } = await supabase.from('ordens_servico').select('*', { count: 'exact', head: true });
+        const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
+        const { count: qtdProdutos } = await supabaseClient.from('produtos').select('*', { count: 'exact', head: true });
+        const { count: qtdOS } = await supabaseClient.from('ordens_servico').select('*', { count: 'exact', head: true });
         
         document.getElementById('dash-qtd-clientes').innerText = qtdClientes || 0;
         document.getElementById('dash-qtd-produtos').innerText = qtdProdutos || 0;
         document.getElementById('dash-qtd-os').innerText = qtdOS || 0;
 
-        const { data: vendas } = await supabase.from('vendas_balcao').select('total_venda, created_at');
+        const { data: vendas } = await supabaseClient.from('vendas_balcao').select('total_venda, created_at');
         
         let totalGeral = 0;
         let totalMes = 0;
@@ -196,7 +195,7 @@ if (document.getElementById('form-cliente')) {
         const nome = document.getElementById('cli-nome').value;
         const telefone = document.getElementById('cli-telefone').value;
 
-        const { error } = await supabase.from('clientes').insert([{ nome, telefone }]);
+        const { error } = await supabaseClient.from('clientes').insert([{ nome, telefone }]);
         if (error) alert("Erro ao salvar: " + error.message);
         else {
             document.getElementById('form-cliente').reset();
@@ -209,7 +208,7 @@ if (document.getElementById('form-cliente')) {
 
 async function listarClientes() {
     const busca = document.getElementById('busca-cliente')?.value.toLowerCase() || "";
-    let query = supabase.from('clientes').select('*').order('nome', { ascending: true });
+    let query = supabaseClient.from('clientes').select('*').order('nome', { ascending: true });
     
     const { data: lista } = await query;
     const corpo = document.getElementById('tabela-clientes-corpo');
@@ -243,7 +242,7 @@ if (document.getElementById('form-produto')) {
         const preco = parseFloat(document.getElementById('prod-preco').value);
         const estoque = parseInt(document.getElementById('prod-estoque').value);
 
-        const { error } = await supabase.from('produtos').insert([{ nome, preco, estoque }]);
+        const { error } = await supabaseClient.from('produtos').insert([{ nome, preco, estoque }]);
         if (error) alert("Erro ao salvar peça: " + error.message);
         else {
             document.getElementById('form-produto').reset();
@@ -256,7 +255,7 @@ if (document.getElementById('form-produto')) {
 
 async function listarProdutos() {
     const busca = document.getElementById('busca-produto')?.value.toLowerCase() || "";
-    const { data: lista } = await supabase.from('produtos').select('*').order('nome', { ascending: true });
+    const { data: lista } = await supabaseClient.from('produtos').select('*').order('nome', { ascending: true });
     const corpo = document.getElementById('tabela-produtos-corpo');
     if (!corpo) return;
     corpo.innerHTML = "";
@@ -299,7 +298,7 @@ async function salvarEdicaoProduto() {
     const preco = parseFloat(document.getElementById('edit-prod-preco').value);
     const estoque = parseInt(document.getElementById('edit-prod-estoque').value);
 
-    const { error } = await supabase.from('produtos').update({ nome, preco, estoque }).eq('id', id);
+    const { error } = await supabaseClient.from('produtos').update({ nome, preco, estoque }).eq('id', id);
     if (error) alert("Erro ao editar: " + error.message);
     else {
         fecharModalEditar();
@@ -313,8 +312,8 @@ async function salvarEdicaoProduto() {
 // SEÇÃO DE VENDAS DE BALCÃO
 // ==========================================
 async function carregarSeletores() {
-    const { data: clientes } = await supabase.from('clientes').select('id, nome').order('nome');
-    const { data: produtos } = await supabase.from('produtos').select('id, nome, preco, estoque').order('nome');
+    const { data: clientes } = await supabaseClient.from('clientes').select('id, nome').order('nome');
+    const { data: produtos } = await supabaseClient.from('produtos').select('id, nome, preco, estoque').order('nome');
 
     const selCliVenda = document.getElementById('vd-cliente');
     const selProdVenda = document.getElementById('vd-produto');
@@ -366,7 +365,7 @@ async function executarVendaBalcao() {
 
     const totalVenda = valorPecaTotal + valorServico;
 
-    const { error: erroVenda } = await supabase.from('vendas_balcao').insert([{
+    const { error: erroVenda } = await supabaseClient.from('vendas_balcao').insert([{
         cliente_id: clienteId,
         produto_id: produtoId,
         quantidade_peca: produtoId ? qtd : null,
@@ -384,7 +383,7 @@ async function executarVendaBalcao() {
         const seletor = document.getElementById('vd-produto');
         const opcao = seletor.options[seletor.selectedIndex];
         const estoqueAtual = parseInt(opcao.getAttribute('data-estoque'));
-        await supabase.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
+        await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
     }
 
     document.getElementById('vd-produto').value = "";
@@ -400,7 +399,7 @@ async function executarVendaBalcao() {
 }
 
 async function listarVendas() {
-    const { data: vendas } = await supabase.from('vendas_balcao').select(`
+    const { data: vendas } = await supabaseClient.from('vendas_balcao').select(`
         id, created_at, quantidade_peca, valor_servico, descricao_servico, total_venda,
         clientes(nome),
         produtos(nome)
@@ -433,7 +432,7 @@ async function listarVendas() {
 
 async function deletarVenda(id) {
     if (!confirm("Deseja estornar essa venda? O valor será removido do caixa. (Nota: Peças não retornam automaticamente ao estoque nesta versão)")) return;
-    const { error } = await supabase.from('vendas_balcao').delete().eq('id', id);
+    const { error } = await supabaseClient.from('vendas_balcao').delete().eq('id', id);
     if (error) alert(error.message);
     else {
         listarVendas();
@@ -455,7 +454,7 @@ async function finalizarOperacao() {
         return;
     }
 
-    const { error } = await supabase.from('ordens_servico').insert([{
+    const { error } = await supabaseClient.from('ordens_servico').insert([{
         cliente_id: clienteId,
         status,
         equipamento,
@@ -472,7 +471,7 @@ async function finalizarOperacao() {
 }
 
 async function listarOrdens() {
-    const { data: ordens } = await supabase.from('ordens_servico').select(`
+    const { data: ordens } = await supabaseClient.from('ordens_servico').select(`
         id, status, equipamento, descricao_defeito, created_at,
         clientes(nome)
     `).order('created_at', { ascending: false });
@@ -511,8 +510,8 @@ async function listarOrdens() {
     }
 }
 
-async function actualizarStatusOS(id, novoStatus) {
-    const { error } = await supabase.from('ordens_servico').update({ status: novoStatus }).eq('id', id);
+async function atualizarStatusOS(id, novoStatus) {
+    const { error } = await supabaseClient.from('ordens_servico').update({ status: novoStatus }).eq('id', id);
     if (error) alert(error.message);
     else {
         listarOrdens();
@@ -525,7 +524,7 @@ async function actualizarStatusOS(id, novoStatus) {
 // ==========================================
 async function deletarItem(tabela, id, callbackSucesso) {
     if (!confirm("Atenção técnico! Deseja realmente excluir este registro permanentemente do banco de dados?")) return;
-    const { error } = await supabase.from(tabela).delete().eq('id', id);
+    const { error } = await supabaseClient.from(tabela).delete().eq('id', id);
     if (error) alert("Erro ao deletar: " + error.message);
     else {
         callbackSucesso();
