@@ -2,243 +2,416 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MSP Tecnologia - Sistema de Gestão</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de OS & Vendas - MSP Tecnologia</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; }
-    </style>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        window.SUPABASE_URL = "https://kockwxjokskvaaobnscw.supabase.co";
+        window.SUPABASE_KEY = "sb_publishable_7KoK3QTF96mBuIVI4OdvkA_sZyWJqEn";
+    </script>
 </head>
-<body class="text-slate-800 antialiased m-0 p-0">
+<body class="bg-gray-100 font-sans text-gray-800 h-screen overflow-hidden m-0 p-0">
 
-    <div id="tela-login" class="min-h-screen flex items-center justify-center bg-slate-900 px-4 hidden">
-        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 transition-all">
-            <div class="text-center mb-6">
-                <div class="bg-blue-600 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/20">
-                    <i data-lucide="wrench" class="text-white w-6 h-6"></i>
-                </div>
-                <h1 class="text-xl md:text-2xl font-bold text-slate-900">MSP Tecnologia</h1>
-                <p class="text-xs md:text-sm text-slate-500 mt-1">Insira suas credenciais para acessar o painel</p>
+    <div id="tela-login" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-6 border border-gray-100">
+            <div class="text-center space-y-2">
+                <span class="text-4xl">🛠️</span>
+                <h2 class="text-xl font-bold text-slate-900">MSP Tecnologia</h2>
+                <p class="text-xs text-gray-500">Insira suas credenciais para acessar o painel</p>
             </div>
+            
+            <div id="login-erro" class="hidden text-center text-xs font-semibold text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200"></div>
 
             <form id="form-login" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">E-mail Corporativo</label>
-                    <input type="email" id="login-email" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm transition-all" placeholder="nome@empresa.com">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">E-mail</label>
+                    <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-600">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Senha de Acesso</label>
-                    <div class="relative">
-                        <input type="password" id="login-senha" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-sm transition-all placeholder:tracking-normal" placeholder="••••••••">
-                        <button type="button" onclick="toggleSenha()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                        </button>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Senha</label>
+                    <div class="relative flex items-center">
+                        <input type="password" id="login-senha" required placeholder="••••••••" class="w-full px-3 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-600">
+                        <button type="button" onclick="toggleSenha()" class="absolute right-3 text-gray-400 hover:text-gray-600 text-sm focus:outline-none cursor-pointer">👁️</button>
                     </div>
                 </div>
-
-                <div id="login-erro" class="p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-medium text-red-600 hidden"></div>
-
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md shadow-blue-600/10 active:scale-[0.99] cursor-pointer">
-                    Entrar no Sistema
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-md cursor-pointer">
+                    🔓 Entrar no Sistema
                 </button>
             </form>
         </div>
     </div>
 
-    <div id="app-conteudo" class="min-h-screen flex flex-col md:flex-row hidden">
-        
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-400 flex flex-col border-r border-slate-800 shrink-0">
-            <div class="p-4 md:p-5 border-b border-slate-800 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-md">MSP</div>
-                    <div>
-                        <h2 class="text-sm font-bold text-white leading-tight">MSP Tecnologia</h2>
-                        <span id="status-conexao" class="text-[10px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">🟢 Conectado</span>
+    <div id="app-conteudo" class="hidden flex flex-col md:flex-row h-screen overflow-hidden">
+
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shadow-xl shrink-0 z-40">
+            <div>
+                <div class="p-4 md:p-5 bg-slate-950 flex items-center justify-between md:justify-start gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🛠️</span>
+                        <div>
+                            <h2 class="text-white font-bold leading-tight text-sm">MSP Tecnologia</h2>
+                            <span class="text-xs text-green-400 font-medium flex items-center gap-1">
+                                <span class="h-2 w-2 rounded-full bg-green-400 block animate-pulse"></span> Online
+                            </span>
+                        </div>
                     </div>
+                    <button onclick="executarLogoff()" class="text-xs bg-slate-800 hover:bg-red-900 text-slate-400 hover:text-white px-2 py-1 rounded md:hidden cursor-pointer transition-all">Sair 🚪</button>
                 </div>
+
+                <nav class="p-2 md:p-4 flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible whitespace-nowrap md:whitespace-normal scrollbar-none">
+                    <button onclick="mudarAba('dashboard')" id="btn-dashboard" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg bg-blue-600 text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        📊 Dashboard
+                    </button>
+                    <button onclick="mudarAba('clientes')" id="btn-clientes" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        👥 Clientes
+                    </button>
+                    <button onclick="mudarAba('produtos')" id="btn-produtos" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        📦 Estoque Peças
+                    </button>
+                    <button onclick="mudarAba('vendas')" id="btn-vendas" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        🛒 Balcão Caixa
+                    </button>
+                    <button onclick="mudarAba('ordens')" id="btn-ordens" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        📋 Ordens Serv.
+                    </button>
+                    <button onclick="mudarAba('relatorios')" id="btn-relatorios" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                        📈 Relatórios
+                    </button>
+                </nav>
             </div>
-
-            <nav class="p-3 space-y-1 flex-1 overflow-y-auto flex flex-row md:flex-col overflow-x-auto md:overflow-x-hidden gap-1 md:gap-0">
-                <button id="btn-dashboard" onclick="mudarAba('dashboard')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg bg-blue-600 text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span class="hidden sm:inline">Dashboard</span>
-                </button>
-                <button id="btn-clientes" onclick="mudarAba('clientes')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="users" class="w-4 h-4"></i> <span class="hidden sm:inline">Clientes</span>
-                </button>
-                <button id="btn-produtos" onclick="mudarAba('produtos')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="package" class="w-4 h-4"></i> <span class="hidden sm:inline">Estoque Peças</span>
-                </button>
-                <button id="btn-vendas" onclick="mudarAba('vendas')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="shopping-cart" class="w-4 h-4"></i> <span class="hidden sm:inline">Balcão Caixa</span>
-                </button>
-                <button id="btn-ordens" onclick="mudarAba('ordens')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="clipboard-list" class="w-4 h-4"></i> <span class="hidden sm:inline">Ordens Serv.</span>
-                </button>
-                <button id="btn-relatorios" onclick="mudarAba('relatorios')" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i> <span class="hidden sm:inline">Relatórios</span>
-                </button>
-            </nav>
-
-            <div class="p-3 border-t border-slate-800 hidden md:block">
-                <button onclick="executarLogoff()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-red-950 hover:text-red-400 text-slate-400 font-medium text-sm transition-all cursor-pointer">
-                    <i data-lucide="log-out" class="w-4 h-4"></i> Encerrar Sessão
+            <div class="hidden md:block p-4 border-t border-slate-800">
+                <button onclick="executarLogoff()" class="w-full bg-slate-950 hover:bg-red-950 text-slate-400 hover:text-red-200 text-xs py-2 rounded-lg transition-all border border-slate-800 cursor-pointer">
+                    🚪 Encerrar Sessão
                 </button>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col min-w-0 overflow-x-hidden">
-            <header class="bg-white border-b border-slate-200 px-4 py-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
-                <h2 id="titulo-pagina" class="text-base md:text-lg font-bold text-slate-900">📊 Dashboard</h2>
-                <button onclick="executarLogoff()" class="md:hidden p-2 text-slate-500 hover:text-red-500 rounded-lg"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        <div class="flex-1 flex flex-col h-full overflow-y-auto">
+            <header class="bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shrink-0">
+                <h1 id="titulo-pagina" class="text-base md:text-xl font-bold text-gray-800">📊 Dashboard</h1>
+                <div id="status-conexao" class="text-xs font-medium bg-green-50 text-green-700 px-2 md:px-3 py-1 rounded-full border border-green-200">
+                    ✅ Conectado
+                </div>
             </header>
 
-            <div class="p-4 md:p-6 space-y-6 flex-1 overflow-y-auto">
-                
-                <section id="tela-dashboard" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
-                            <div class="p-3 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="users" class="w-5 h-5"></i></div>
-                            <div><p class="text-xs text-slate-500 font-medium uppercase">Clientes Ativos</p><p id="dash-qtd-clientes" class="text-xl font-bold text-slate-900 font-mono">0</p></div>
+            <main class="p-3 md:p-6 max-w-7xl w-full mx-auto space-y-6">
+                <section id="tela-dashboard" class="space-y-4 md:space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                            <div class="p-3 md:p-4 bg-blue-100 text-blue-600 rounded-lg text-xl md:text-2xl">👥</div>
+                            <div>
+                                <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Clientes</p>
+                                <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-clientes">0</h3>
+                            </div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
-                            <div class="p-3 bg-purple-50 text-purple-600 rounded-lg"><i data-lucide="package" class="w-5 h-5"></i></div>
-                            <div><p class="text-xs text-slate-500 font-medium uppercase">Itens em Estoque</p><p id="dash-qtd-produtos" class="text-xl font-bold text-slate-900 font-mono">0</p></div>
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                            <div class="p-3 md:p-4 bg-purple-100 text-purple-600 rounded-lg text-xl md:text-2xl">📦</div>
+                            <div>
+                                <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Itens Estoque</p>
+                                <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-produtos">0</h3>
+                            </div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
-                            <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="wrench" class="w-5 h-5"></i></div>
-                            <div><p class="text-xs text-slate-500 font-medium uppercase">Ordens de Serviço</p><p id="dash-qtd-os" class="text-xl font-bold text-slate-900 font-mono">0</p></div>
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                            <div class="p-3 md:p-4 bg-yellow-100 text-yellow-600 rounded-lg text-xl md:text-2xl">⏳</div>
+                            <div>
+                                <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">OS Ativas</p>
+                                <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-os">0</h3>
+                            </div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-4 shadow-sm">
-                            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="dollar-sign" class="w-5 h-5"></i></div>
-                            <div><p class="text-xs text-slate-500 font-medium uppercase">Faturamento Geral</p><p id="dash-faturamento" class="text-xl font-bold text-emerald-600 font-mono">R$ 0,00</p></div>
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                            <div class="p-3 md:p-4 bg-emerald-100 text-emerald-600 rounded-lg text-xl md:text-2xl">💰</div>
+                            <div>
+                                <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Faturamento Geral</p>
+                                <h3 class="text-lg md:text-2xl font-bold mt-0.5 text-emerald-600" id="dash-faturamento">R$ 0,00</h3>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-xl shadow-sm border border-slate-900">
-                            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Fechamento do Mês</span><i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i></div>
-                            <h3 id="dash-faturamento-mes" class="text-3xl font-black font-mono tracking-tight text-emerald-400">R$ 0,00</h3>
-                            <p class="text-xs text-slate-400 mt-2">Somatório bruto faturado no mês atual.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 md:p-6 rounded-xl shadow-md">
+                            <p class="text-[10px] md:text-xs font-semibold text-slate-400 uppercase">Faturamento do Mês</p>
+                            <h3 class="text-2xl md:text-3xl font-black mt-0.5 text-emerald-400" id="dash-faturamento-mes">R$ 0,00</h3>
                         </div>
-                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Entradas de Hoje</span><span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span></div>
-                            <h3 id="dash-faturamento-dia" class="text-3xl font-black font-mono tracking-tight text-slate-900">R$ 0,00</h3>
-                            <p class="text-xs text-slate-500 mt-2">Vendas fechadas no balcão hoje.</p>
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                            <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Faturamento de Hoje</p>
+                            <h3 class="text-2xl md:text-3xl font-black mt-0.5 text-gray-900" id="dash-faturamento-dia">R$ 0,00</h3>
                         </div>
                     </div>
                 </section>
 
-                <section id="tela-clientes" class="space-y-4 hidden">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Cadastrar Novo Cliente</h3>
-                        <form id="form-cliente" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Nome Completo</label><input type="text" id="cli-nome" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">WhatsApp / Telefone</label><input type="text" id="cli-telefone" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" placeholder="(74) 99999-9999"></div>
-                            <button type="submit" class="w-full bg-slate-900 text-white font-semibold py-2 rounded-lg text-sm transition-all hover:bg-slate-800 cursor-pointer">Salvar Cadastro</button>
+                <section id="tela-clientes" class="hidden space-y-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">👥 Cadastrar Novo Cliente</h3>
+                        <form id="form-cliente" class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome Completo</label>
+                                <input type="text" id="cli-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Telefone / WhatsApp</label>
+                                <input type="text" id="cli-telefone" placeholder="(74) 99999-9999" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm cursor-pointer shadow-xs transition-all">Salvar Cliente</button>
+                            </div>
                         </form>
                     </div>
 
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="p-3 border-b border-slate-100"><input type="text" id="busca-cliente" oninput="listarClientes()" placeholder="🔎 Digite para pesquisar cliente..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse text-sm"><thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-semibold uppercase"><th class="p-3">Nome</th><th class="p-3">Telefone</th><th class="p-3 text-center w-24">Ações</th></thead><tbody id="tabela-clientes-corpo"></tbody></table></div>
+                    <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+                        <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <h4 class="font-bold text-gray-700 text-xs md:text-sm">Clientes Cadastrados</h4>
+                            <input type="text" id="busca-cliente" oninput="listarClientes()" placeholder="🔎 Buscar cliente..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full sm:w-64 bg-white focus:outline-none">
+                        </div>
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                        <th class="p-3 md:p-4">Nome</th>
+                                        <th class="p-3 md:p-4">Telefone</th>
+                                        <th class="p-3 md:p-4 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-clientes-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
-                <section id="tela-produtos" class="space-y-4 hidden">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Adicionar Item / Peça ao Estoque</h3>
-                        <form id="form-produto" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
-                            <div class="sm:col-span-1 lg:col-span-2"><label class="block text-xs font-medium text-slate-600 mb-1">Descrição do Item / Nome da Peça</label><input type="text" id="prod-nome" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Preço Unitário (R$)</label><input type="number" step="0.01" id="prod-preco" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Qtd Inicial Estoque</label><input type="number" id="prod-estoque" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"></div>
-                            <button type="submit" class="w-full sm:col-span-3 lg:col-span-4 bg-slate-900 text-white font-semibold py-2 rounded-lg text-sm transition-all hover:bg-slate-800 cursor-pointer">Adicionar Peça</button>
+                <section id="tela-produtos" class="hidden space-y-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">📦 Cadastrar Produto / Peça</h3>
+                        <form id="form-produto" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Produto</label>
+                                <input type="text" id="prod-nome" required placeholder="Ex: SSD 240GB" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Preço de Venda (R$)</label>
+                                <input type="number" id="prod-preco" step="0.01" required placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Inicial</label>
+                                <input type="number" id="prod-estoque" required placeholder="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div class="sm:col-span-2 md:col-span-4 flex justify-end">
+                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg text-sm cursor-pointer shadow-xs transition-all w-full sm:w-auto">Salvar no Estoque</button>
+                            </div>
                         </form>
                     </div>
 
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="p-3 border-b border-slate-100"><input type="text" id="busca-produto" oninput="listarProdutos()" placeholder="🔎 Filtrar autopeça ou componente..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse text-sm"><thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-semibold uppercase"><th class="p-3">Item / Peça</th><th class="p-3">Valor de Venda</th><th class="p-3">Qtd Estoque</th><th class="p-3 text-center w-36">Ações</th></thead><tbody id="tabela-produtos-corpo"></tbody></table></div>
-                    </div>
-                </section>
-
-                <section id="tela-vendas" class="space-y-4 hidden">
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="border-b border-slate-100 pb-2 mb-4"><h3 class="text-base font-bold text-slate-900">🛒 Caixa Rápido - Venda Direta de Balcão</h3><p class="text-xs text-slate-500 mt-0.5">Use para saídas rápidas de peças ou cobranças diretas sem OS aberta.</p></div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                            <div><label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">1. Escolha o Cliente</label><select id="vd-cliente" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-sm rounded-xl focus:outline-none focus:border-blue-500 cursor-pointer"></select></div>
-                            <div class="lg:col-span-2"><label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">2. Selecione o Produto / Peça</label><select id="vd-produto" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-sm rounded-xl focus:outline-none focus:border-blue-500 cursor-pointer"></select></div>
-                            <div><label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">3. Quantidade</label><input type="number" id="vd-qtd" value="1" min="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-sm rounded-xl focus:outline-none focus:border-blue-500 font-mono font-bold"></div>
-                            <div class="lg:col-span-2"><label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">4. Valor Adicional de Mão de Obra / Serviço (R$)</label><input type="number" step="0.01" id="vd-valor-servico" value="0.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-sm rounded-xl focus:outline-none focus:border-blue-500 font-mono font-bold text-blue-600"></div>
-                            <button type="button" onclick="executarVendaBalcao()" class="w-full lg:col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Confirmar e Lançar Caixa</button>
+                    <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+                        <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <h4 class="font-bold text-gray-700 text-xs md:text-sm">Estoque Atual</h4>
+                            <input type="text" id="busca-produto" oninput="listarProdutos()" placeholder="🔎 Buscar produto..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full sm:w-64 bg-white focus:outline-none">
+                        </div>
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                        <th class="p-3 md:p-4">Descrição do Item</th>
+                                        <th class="p-3 md:p-4">Preço Unitário</th>
+                                        <th class="p-3 md:p-4">Estoque</th>
+                                        <th class="p-3 md:p-4 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-produtos-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
+                            </table>
                         </div>
                     </div>
-
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50"><h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Histórico Recente de Lançamentos de Balcão</h4></div>
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse text-sm"><thead class="bg-slate-100 text-slate-500 text-xs font-semibold uppercase"><th class="p-3">Data/Hora</th><th class="p-3">Cliente</th><th class="p-3">Itens Lançados</th><th class="p-3">Total Recebido</th><th class="p-3 text-center w-48">Ações</th></thead><tbody id="tabela-vendas-corpo"></tbody></table></div>
-                    </div>
                 </section>
 
-                <section id="tela-ordens" class="space-y-4 hidden">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Abertura de Nova Ordem de Serviço (OS)</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Cliente Vinculado</label><select id="os-cliente" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none cursor-pointer"></select></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Status de Entrada</label><select id="os-status" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none cursor-pointer"><option value="Em Análise">⏳ Em Análise</option><option value="Em Andamento">🛠️ Na Bancada</option><option value="Aguardando Peça">📦 Sem Peça</option></select></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Equipamento (Marca/Modelo/Série)</label><input type="text" id="os-equipamento" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none" placeholder="Ex: Impressora Epson L3250"></div>
-                            <div class="sm:col-span-2 lg:col-span-3"><label class="block text-xs font-medium text-slate-600 mb-1">Defeito Relatado / Observações Iniciais</label><textarea id="os-descricao" rows="2" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none" placeholder="Descreva os sintomas informados pelo cliente..."></textarea></div>
-                            <button type="button" onclick="finalizarOperacao()" class="w-full sm:col-span-2 lg:col-span-3 bg-slate-900 text-white font-semibold py-2.5 rounded-lg text-sm transition-all hover:bg-slate-800 cursor-pointer">Abrir Ordem de Serviço</button>
+                <section id="tela-vendas" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 space-y-3 md:space-y-4 h-fit">
+                            <h3 class="text-base md:text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">🛒 Fechamento de Venda</h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
+                                <select id="vd-cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Peça Aplicada</label>
+                                <select id="vd-produto" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer"></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
+                                    <input type="number" id="vd-qtd" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Mão de Obra (R$)</label>
+                                    <input type="number" id="vd-valor-servico" step="0.01" value="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                </div>
+                            </div>
+                            <button type="button" onclick="executarVendaBalcao()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 md:py-3 px-4 rounded-lg text-xs md:text-sm cursor-pointer shadow-md transition-all">
+                                💸 Confirmar Venda e Emitir Cupom
+                            </button>
+                        </div>
+
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+                            <div class="p-4 bg-gray-50 border-b border-gray-200">
+                                <h4 class="font-bold text-gray-700 text-xs md:text-sm">Histórico do Caixa de Balcão</h4>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                            <th class="p-3 md:p-4">Data / Hora</th>
+                                            <th class="p-3 md:p-4">Cliente</th>
+                                            <th class="p-3 md:p-4">Detalhamento / Peça</th>
+                                            <th class="p-3 md:p-4">Total</th>
+                                            <th class="p-3 md:p-4 text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-vendas-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse text-sm"><thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-semibold uppercase"><th class="p-3 w-28">Nº OS</th><th class="p-3">Cliente</th><th class="p-3 w-44">Fase / Status</th><th class="p-3">Equipamento / Defeito</th><th class="p-3 text-center w-24">Ações</th></thead><tbody id="tabela-ordens-corpo"></tbody></table></div>
+                <section id="tela-ordens" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 space-y-3 md:space-y-4 h-fit">
+                            <h3 class="text-base md:text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">📋 Entrada de Máquina</h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Selecione o Cliente</label>
+                                <select id="os-cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Situação Inicial</label>
+                                <select id="os-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-semibold text-slate-700 cursor-pointer">
+                                    <option value="Em Análise">⏳ Em Análise</option>
+                                    <option value="Em Andamento">🛠️ Na Bancada</option>
+                                    <option value="Aguardando Peça">📦 Sem Peça</option>
+                                    <option value="Concluido">✅ Concluído</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Equipamento / Modelo</label>
+                                <input type="text" id="os-equipamento" required placeholder="Ex: Impressora Epson L3150" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Chamado</label>
+                                <textarea id="os-descricao" required placeholder="Ex: Não liga, puxando papel torto." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-20 bg-white"></textarea>
+                            </div>
+                            <button onclick="finalizarOperacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 md:py-3 px-4 rounded-lg text-xs md:text-sm cursor-pointer shadow-md transition-all">
+                                📍 Abrir Ordem de Serviço
+                            </button>
+                        </div>
+
+                        <div class="lg:col-span-3 bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+                            <div class="p-4 bg-gray-50 border-b border-gray-200">
+                                <h4 class="font-bold text-gray-700 text-xs md:text-sm">Quadro de Acompanhamento Técnico</h4>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                            <th class="p-3 md:p-4">Registro</th>
+                                            <th class="p-3 md:p-4">Cliente</th>
+                                            <th class="p-3 md:p-4">Situação / Ajuste</th>
+                                            <th class="p-3 md:p-4">Aparelho / Ocorrência</th>
+                                            <th class="p-3 md:p-4 text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-ordens-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <section id="tela-relatorios" class="space-y-4 hidden">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Filtro de Período de Movimentação</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Data Início</label><input type="date" id="rep-data-inicio" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                            <div><label class="block text-xs font-medium text-slate-600 mb-1">Data Fim</label><input type="date" id="rep-data-fim" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                            <button type="button" onclick="gerarRelatorioFiltrado()" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg text-sm transition-all hover:bg-blue-700 shadow-md cursor-pointer">Processar Fechamento</button>
+                <section id="tela-relatorios" class="hidden space-y-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">📈 Relatório de Fechamento por Período</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Data Inicial</label>
+                                <input type="date" id="rep-data-inicio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Data Final</label>
+                                <input type="date" id="rep-data-fim" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <button onclick="gerarRelatorioFiltrado()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm cursor-pointer shadow-xs transition-all h-[38px]">
+                                    🔍 Filtrar Período
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center"><p class="text-xs text-slate-500 font-medium uppercase">Custo Total de Peças</p><p id="rep-total-pecas" class="text-xl font-bold font-mono text-slate-700">R$ 0,00</p></div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center"><p class="text-xs text-slate-500 font-medium uppercase">Total Mão de Obra</p><p id="rep-total-servicos" class="text-xl font-bold font-mono text-blue-600">R$ 0,00</p></div>
-                        <div class="bg-white p-4 rounded-xl border-2 border-emerald-500 text-center shadow-sm"><p class="text-xs text-emerald-600 font-bold uppercase">Faturamento Bruto Período</p><p id="rep-total-geral" class="text-2xl font-black font-mono text-emerald-600">R$ 0,00</p></div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Faturamento Peças</p>
+                            <h3 class="text-xl font-extrabold text-blue-600 mt-1" id="rep-total-pecas">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Faturamento Mão de Obra</p>
+                            <h3 class="text-xl font-extrabold text-indigo-600 mt-1" id="rep-total-servicos">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border-emerald-200 bg-emerald-50/30 shadow-xs">
+                            <p class="text-[10px] font-bold text-emerald-700 uppercase">Faturamento Bruto Total</p>
+                            <h3 class="text-xl font-black text-emerald-600 mt-1" id="rep-total-geral">R$ 0,00</h3>
+                        </div>
                     </div>
 
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse text-sm"><thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-semibold uppercase"><th class="p-3">Data Lançamento</th><th class="p-3">Operação</th><th class="p-3">Detalhamento</th><th class="p-3">Margem Líquida</th><th class="p-3">Total Bruto</th></thead><tbody id="tabela-relatorios-corpo"><tr><td colspan="5" class="p-4 text-center text-slate-400 italic">Defina as datas acima para gerar os dados.</td></tr></tbody></table></div>
+                    <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+                        <div class="p-4 bg-gray-50 border-b border-gray-200">
+                            <h4 class="font-bold text-gray-700 text-xs md:text-sm">Vendas Encontradas no Período</h4>
+                        </div>
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                        <th class="p-3 md:p-4">Data</th>
+                                        <th class="p-3 md:p-4">Cliente</th>
+                                        <th class="p-3 md:p-4">Item / Peça</th>
+                                        <th class="p-3 md:p-4">Mão de Obra</th>
+                                        <th class="p-3 md:p-4">Total Liquido</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-relatorios-corpo" class="text-xs md:text-sm divide-y divide-gray-100">
+                                    <tr>
+                                        <td colspan="5" class="p-6 text-center text-gray-400 italic">Escolha o período acima e clique em Filtrar para carregar.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
-
-            </div>
-        </main>
-    </div>
-
-    <div id="modal-editar-produto" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center"><h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Ajustar Dados da Peça</h3><button onclick="fecharModalEditar()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div class="p-4 space-y-3">
-                <input type="hidden" id="edit-prod-id">
-                <div><label class="block text-xs font-medium text-slate-600 mb-1">Nome/Descrição da Peça</label><input type="text" id="edit-prod-nome" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                <div><label class="block text-xs font-medium text-slate-600 mb-1">Preço unitário (R$)</label><input type="number" step="0.01" id="edit-prod-preco" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-                <div><label class="block text-xs font-medium text-slate-600 mb-1">Quantidade em Estoque</label><input type="number" id="edit-prod-estoque" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"></div>
-            </div>
-            <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2"><button onclick="fecharModalEditar()" class="px-3 py-1.5 border border-slate-200 text-slate-600 font-medium text-xs rounded-lg hover:bg-slate-100 cursor-pointer">Cancelar</button><button onclick="salvarEdicaoProduto()" class="px-4 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 cursor-pointer shadow-sm">Gravar Alterações</button></div>
+            </main>
         </div>
-    </div>
 
-    <script>lucide.createIcons();</script>
-    <script src="index.js"></script>
-</body>
-</html>
+        <div id="modal-editar-produto" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <h3 class="text-base md:text-lg font-bold text-gray-800">✏️ Editar Produto / Peça</h3>
+                    <button onclick="fecharModalEditar()" class="text-gray-400 hover:text-gray-600 text-xl cursor-pointer">&times;</button>
+                </div>
+                <input type="hidden" id="edit-prod-id">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Produto</label>
+                    <input type="text" id="edit-prod-nome" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Preço (R$)</label>
+                        <input type="number" id="edit-prod-preco" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque</label>
+                        <input type="number" id="edit-prod-estoque" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="fecharModalEditar()" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg cursor-pointer">Cancelar</button>
+                    <button onclick="salvarEdicaoProduto()" class="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg cursor-pointer shadow-xs">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="index.js"></script>
+    </body>
+    </html>
