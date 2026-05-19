@@ -256,6 +256,10 @@
                                     <input type="number" id="vd-valor-servico" step="0.01" value="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                                 </div>
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Serviço Técnico</label>
+                                <textarea id="vd-descricao-servico" placeholder="Ex: Configuração de Software / Instalação Física" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-16 bg-white"></textarea>
+                            </div>
                             <button type="button" onclick="executarVendaBalcao()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 md:py-3 px-4 rounded-lg text-xs md:text-sm cursor-pointer shadow-md transition-all">
                                 💸 Confirmar Venda e Emitir Cupom
                             </button>
@@ -271,7 +275,7 @@
                                         <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
                                             <th class="p-3 md:p-4">Data / Hora</th>
                                             <th class="p-3 md:p-4">Cliente</th>
-                                            <th class="p-3 md:p-4">Detalhamento / Peça</th>
+                                            <th class="p-3 md:p-4">Detalhamento / Serviço</th>
                                             <th class="p-3 md:p-4">Total</th>
                                             <th class="p-3 md:p-4 text-center">Ações</th>
                                         </tr>
