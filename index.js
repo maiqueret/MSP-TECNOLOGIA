@@ -285,17 +285,21 @@ async function executarVendaBalcao() {
     const totalVendaCalculada = (precoUn * qtd) + valorMaoDeObra;
 
     try {
-        // Correção do payload de data para bater exatamente com a coluna de texto aceita pelo banco
+        // Enviando apenas os campos padrão que já estão criados e funcionando na sua tabela
         const { error } = await supabaseClient.from('vendas_balcao').insert([{
             cliente_id: clienteId, 
             produto_id: produtoId, 
             quantidade: qtd, 
             valor_servico: valorMaoDeObra, 
-            total_venda: totalVendaCalculada,
-            descricao_servico: txtServico || "Venda Direta"
+            total_venda: totalVendaCalculada
         }]);
         
         if (error) throw error;
+        
+        // Se você quiser guardar a descrição do serviço localmente para o recibo não sair em branco:
+        if (txtServico) {
+            localStorage.setItem(`venda_txt_servico_temp`, txtServico);
+        }
         
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
         document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00"; document.getElementById('vd-descricao-servico').value = "";
@@ -303,10 +307,9 @@ async function executarVendaBalcao() {
         alert("Venda realizada com sucesso!");
     } catch (e) {
         console.error(e);
-        alert("Erro no formato enviado ao Supabase.");
+        alert("Erro ao salvar no banco. Verifique os campos da tabela.");
     }
 }
-
 async function listarVendas() {
     try {
         const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select('*').order('id', { ascending: false });
