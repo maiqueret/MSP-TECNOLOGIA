@@ -21,7 +21,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// FUNÇÃO DO OLHINHO PARA EXIBIR/OCULTAR A SENHA
 function toggleSenha() {
     const campoSenha = document.getElementById("login-senha");
     if (campoSenha.type === "password") {
@@ -31,7 +30,6 @@ function toggleSenha() {
     }
 }
 
-// EXECUÇÃO DO LOGIN
 async function executarLogin(e) {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim();
@@ -56,7 +54,6 @@ async function executarLogin(e) {
     }
 }
 
-// INICIALIZAÇÃO DOS DADOS APÓS LOGIN
 function liberarAcessoAplicativo() {
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("app-conteudo").classList.remove("hidden");
@@ -74,14 +71,12 @@ function liberarAcessoAplicativo() {
     if(document.getElementById('rep-data-fim')) document.getElementById('rep-data-fim').value = hojeStr;
 }
 
-// LOGOFF
 async function executarLogoff() {
     await supabaseClient.auth.signOut();
     usuarioLogado = null;
     window.location.reload();
 }
 
-// NAVEGAÇÃO ENTRE ABAS
 function mudarAba(aba) {
     const telas = ['dashboard', 'clientes', 'produtos', 'vendas', 'ordens', 'relatorios'];
     telas.forEach(t => {
@@ -96,18 +91,9 @@ function mudarAba(aba) {
     if (telaAtiva) telaAtiva.classList.remove('hidden');
     if (btnAtivo) btnAtivo.className = "inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg bg-blue-600 text-white font-medium text-xs md:text-sm transition-all cursor-pointer";
 
-    const titulos = {
-        dashboard: "📊 Dashboard",
-        clientes: "👥 Gerenciamento de Clientes",
-        produtos: "📦 Estoque de Peças",
-        vendas: "🛒 Balcão de Vendas",
-        ordens: "📋 Quadro de Ordens de Serviço",
-        relatorios: "📈 Relatórios de Fechamento"
-    };
-    document.getElementById('titulo-pagina').innerText = titulos[aba] || "Painel";
+    document.getElementById('titulo-pagina').innerText = aba === 'dashboard' ? "📊 Dashboard" : aba === 'clientes' ? "👥 Clientes" : aba === 'produtos' ? "📦 Estoque Peças" : aba === 'vendas' ? "🛒 Balcão Caixa" : aba === 'ordens' ? "📋 Ordens Serv." : "📈 Relatórios";
 }
 
-// TESTE DE CONEXÃO
 async function verificarConexao() {
     try {
         await supabaseClient.from('clientes').select('id').limit(1);
@@ -117,28 +103,17 @@ async function verificarConexao() {
     }
 }
 
-// DASHBOARD GLOBAL
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
         document.getElementById('dash-qtd-clientes').innerText = qtdClientes || 0;
-    } catch(e) {}
-
-    try {
         const { count: qtdProdutos } = await supabaseClient.from('produtos').select('*', { count: 'exact', head: true });
         document.getElementById('dash-qtd-produtos').innerText = qtdProdutos || 0;
-    } catch(e) {}
-
-    try {
         const { count: qtdOS } = await supabaseClient.from('ordens_servico').select('*', { count: 'exact', head: true });
         document.getElementById('dash-qtd-os').innerText = qtdOS || 0;
-    } catch(e) {}
 
-    try {
         const { data: vendas } = await supabaseClient.from('vendas_balcao').select('total_venda, created_at');
-        
         let totalGeral = 0, totalMes = 0, totalHoje = 0;
-        
         const hojeObj = new Date();
         const hojeAno = hojeObj.getFullYear();
         const hojeMes = hojeObj.getMonth();
@@ -146,38 +121,36 @@ async function carregarDadosDashboard() {
 
         if (vendas) {
             vendas.forEach(v => {
-                const valorTotalVenda = parseFloat(v.total_venda) || 0;
-                totalGeral += valorTotalVenda;
-                
+                const valorVenda = parseFloat(v.total_venda) || 0;
+                totalGeral += valorVenda;
                 const dataVenda = new Date(v.created_at);
                 if (!isNaN(dataVenda.getTime())) {
                     if (dataVenda.getFullYear() === hojeAno && dataVenda.getMonth() === hojeMes) {
-                        totalMes += valorTotalVenda;
-                        if (dataVenda.getDate() === hojeDia) {
-                            totalHoje += valorTotalVenda;
-                        }
+                        totalMes += valorVenda;
+                        if (dataVenda.getDate() === hojeDia) totalHoje += valorVenda;
                     }
                 }
             });
         }
-
-        if(document.getElementById('dash-faturamento')) document.getElementById('dash-faturamento').innerText = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
-        if(document.getElementById('dash-faturamento-mes')) document.getElementById('dash-faturamento-mes').innerText = `R$ ${totalMes.toFixed(2).replace('.', ',')}`;
-        if(document.getElementById('dash-faturamento-dia')) document.getElementById('dash-faturamento-dia').innerText = `R$ ${totalHoje.toFixed(2).replace('.', ',')}`;
-    } catch(e) {
-        console.error("Erro no dashboard:", e);
-    }
+        document.getElementById('dash-faturamento').innerText = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-faturamento-mes').innerText = `R$ ${totalMes.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-faturamento-dia').innerText = `R$ ${totalHoje.toFixed(2).replace('.', ',')}`;
+    } catch(e){}
 }
 
 // ==========================================
-// SEÇÃO DE CLIENTES
+// SEÇÃO DE CLIENTES ADAPTADA (NOVOS CAMPOS)
 // ==========================================
 if (document.getElementById('form-cliente')) {
     document.getElementById('form-cliente').addEventListener('submit', async (e) => {
         e.preventDefault();
         const nome = document.getElementById('cli-nome').value;
         const telefone = document.getElementById('cli-telefone').value;
-        await supabaseClient.from('clientes').insert([{ nome, telefone }]);
+        const cpf_cnpj = document.getElementById('cli-cpf').value;
+        const endereco = document.getElementById('cli-endereco').value;
+        const cidade = document.getElementById('cli-cidade').value;
+
+        await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj, endereco, cidade }]);
         document.getElementById('form-cliente').reset();
         listarClientes(); carregarDadosDashboard(); carregarSeletores();
     });
@@ -192,12 +165,18 @@ async function listarClientes() {
         corpo.innerHTML = "";
         if (lista) {
             lista.forEach(c => {
-                if (c.nome.toLowerCase().includes(busca) || c.telefone.includes(busca)) {
-                    corpo.innerHTML += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 md:p-4 font-medium text-gray-900">${c.nome}</td><td class="p-3 md:p-4 text-gray-600">${c.telefone || 'Não informado'}</td><td class="p-3 md:p-4 text-center"><button onclick="deletarItem('clientes', '${c.id}', listarClientes)" class="text-red-600 hover:text-red-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td></tr>`;
+                if (c.nome.toLowerCase().includes(busca) || (c.telefone && c.telefone.includes(busca))) {
+                    corpo.innerHTML += `
+                        <tr class="hover:bg-gray-50 border-b border-gray-100">
+                            <td class="p-3 md:p-4 font-medium text-gray-900">${c.nome}</td>
+                            <td class="p-3 md:p-4 text-slate-600 font-mono text-xs">${c.cpf_cnpj || 'Sem registro'}</td>
+                            <td class="p-3 md:p-4 text-xs text-gray-500">📍 ${c.endereco || ''} - ${c.cidade || ''}<br>📞 ${c.telefone || 'S/T'}</td>
+                            <td class="p-3 md:p-4 text-center"><button onclick="deletarItem('clientes', '${c.id}', listarClientes)" class="text-red-600 hover:text-red-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td>
+                        </tr>`;
                 }
             });
         }
-    } catch(e) {}
+    } catch(e){}
 }
 
 // ==========================================
@@ -230,7 +209,7 @@ async function listarProdutos() {
                 }
             });
         }
-    } catch(e) {}
+    } catch(e){}
 }
 
 function abrirModalEditar(id, nome, preco, estoque) {
@@ -278,7 +257,7 @@ async function carregarSeletores() {
                 selProdVenda.innerHTML += `<option value="${p.id}" data-preco="${p.preco}" data-estoque="${p.estoque}" ${desabilitado}>${p.nome} - R$ ${p.preco.toFixed(2)} ${textoEstoque}</option>`;
             });
         }
-    } catch(e) {}
+    } catch(e){}
 }
 
 async function executarVendaBalcao() {
@@ -287,64 +266,34 @@ async function executarVendaBalcao() {
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
     const valorMaoDeObra = parseFloat(document.getElementById('vd-valor-servico').value) || 0;
 
-    if (!clienteId || !produtoId) { 
-        alert("Escolha o cliente e o item para fechar a venda!"); 
-        return; 
-    }
+    if (!clienteId || !produtoId) { alert("Escolha o cliente e o item!"); return; }
 
     const seletor = document.getElementById('vd-produto');
     const opcao = seletor.options[seletor.selectedIndex];
     const precoUn = parseFloat(opcao.getAttribute('data-preco'));
     const estoqueAtual = parseInt(opcao.getAttribute('data-estoque'));
 
-    if (qtd > estoqueAtual) { 
-        alert(`Quantidade insuficiente! Estoque atual: ${estoqueAtual}`); 
-        return; 
-    }
-
+    if (qtd > estoqueAtual) { alert(`Quantidade insuficiente!`); return; }
     const totalVendaCalculada = (precoUn * qtd) + valorMaoDeObra;
 
     try {
         const { error } = await supabaseClient.from('vendas_balcao').insert([{
-            cliente_id: clienteId,
-            produto_id: produtoId,
-            quantidade: qtd,
-            valor_servico: valorMaoDeObra,
-            total_venda: totalVendaCalculada
+            cliente_id: clienteId, produto_id: produtoId, quantidade: qtd, valor_servico: valorMaoDeObra, total_venda: totalVendaCalculada
         }]);
-        
         if (error) throw error;
-
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
-
-        document.getElementById('vd-produto').value = "";
-        document.getElementById('vd-qtd').value = "1";
-        document.getElementById('vd-valor-servico').value = "0.00";
-        
-        await listarVendas(); 
-        await listarProdutos(); 
-        await carregarDadosDashboard(); 
-        await carregarSeletores();
-        
-        alert("Venda de balcão realizada e contabilizada com sucesso!");
-    } catch (e) { 
-        console.error("Erro na venda:", e);
-        alert("Erro ao salvar a venda de balcão."); 
-    }
+        document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00";
+        listarVendas(); listarProdutos(); carregarDadosDashboard(); carregarSeletores();
+        alert("Venda realizada com sucesso!");
+    } catch (e) {}
 }
 
 async function listarVendas() {
     try {
-        const { data: vendas, error } = await supabaseClient
-            .from('vendas_balcao')
-            .select(`id, created_at, quantidade, valor_servico, total_venda, clientes(nome, telefone), produtos(nome, preco)`)
-            .order('created_at', { ascending: false });
-
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, clientes(nome, telefone), produtos(nome, preco)`).order('created_at', { ascending: false });
         if (error) throw error;
-
         const corpo = document.getElementById('tabela-vendas-corpo');
-        if (!corpo) return;
-        corpo.innerHTML = "";
+        if (!corpo) return; corpo.innerHTML = "";
 
         if (vendas && vendas.length > 0) {
             vendas.forEach(v => {
@@ -354,15 +303,7 @@ async function listarVendas() {
                 const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Geral';
                 
                 const dadosRecibo = JSON.stringify({
-                    id: v.id,
-                    data: dataFmt,
-                    cliente: clienteNome,
-                    telefone: v.clientes?.telefone || '',
-                    item: v.produtos?.nome || '',
-                    qtd: v.quantidade,
-                    valor_item: v.produtos?.preco || 0,
-                    mao_obra: v.valor_servico,
-                    total: totalItem
+                    id: v.id, data: dataFmt, cliente: clienteNome, telefone: v.clientes?.telefone || '', item: v.produtos?.nome || '', qtd: v.quantidade, valor_item: v.produtos?.preco || 0, mao_obra: v.valor_servico, total: totalItem
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
@@ -377,69 +318,18 @@ async function listarVendas() {
                         </td>
                     </tr>`;
             });
-        } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhuma venda listada no histórico do caixa.</td></tr>`;
         }
-    } catch (e) {
-        console.error("Erro ao listar vendas:", e);
-    }
+    } catch (e) {}
 }
 
 function imprimirReciboVenda(v) {
     const janelaImpressao = window.open('', '', 'width=600,height=700');
-    janelaImpressao.document.write(`
-        <html>
-        <head>
-            <title>Recibo MSP Tecnologia</title>
-            <style>
-                body { font-family: 'Courier New', Courier, monospace; font-size: 14px; padding: 20px; color: #000; }
-                .text-center { text-align: center; }
-                .bold { font-weight: bold; }
-                .linha { border-bottom: 1px dashed #000; margin: 10px 0; }
-                .flex { display: flex; justify-content: space-between; }
-                @media print { body { padding: 0; } }
-            </style>
-        </head>
-        <body>
-            <div class="text-center bold" style="font-size: 16px;">MSP TECNOLOGIA</div>
-            <div class="text-center">Irecê - Bahia</div>
-            <div class="linha"></div>
-            <div><b>CUPOM Nº:</b> BAL-${v.id}</div>
-            <div><b>DATA/HORA:</b> ${v.data}</div>
-            <div class="linha"></div>
-            <div><b>CLIENTE:</b> ${v.cliente}</div>
-            ${v.telefone ? `<div><b>WHATSAPP:</b> ${v.telefone}</div>` : ''}
-            <div class="linha"></div>
-            <div class="bold">DETALHAMENTO:</div>
-            <div class="flex">
-                <span>${v.qtd}x ${v.item}</span>
-                <span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span>
-            </div>
-            ${parseFloat(v.mao_obra) > 0 ? `
-            <div class="flex">
-                <span>🔧 Mão de Obra / Serviço</span>
-                <span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span>
-            </div>` : ''}
-            <div class="linha"></div>
-            <div class="flex bold" style="font-size: 16px;">
-                <span>TOTAL LÍQUIDO:</span>
-                <span>R$ ${parseFloat(v.total).toFixed(2)}</span>
-            </div>
-            <div class="linha"></div>
-            <br><br>
-            <div class="text-center">Assinatura Responsável</div>
-            <div class="text-center">__________________________________</div>
-            <br><br>
-            <div class="text-center bold">Obrigado pela preferência!</div>
-            <script>window.print(); window.close();</script>
-        </body>
-        </html>
-    `);
+    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
     janelaImpressao.document.close();
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO - RETORNO INDEPENDENTE DE ESTRUTURA
+// SEÇÃO DE ORDENS DE SERVIÇO - COMPLETA E INTEGRADA
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -451,73 +341,48 @@ async function finalizarOperacao() {
 
     try {
         const { error } = await supabaseClient.from('ordens_servico').insert([{ 
-            cliente_id: clienteId, 
-            status, 
-            descricao_equipamento: equipamento, 
-            defeito_relatado: descricao 
+            cliente_id: clienteId, status, descricao_equipamento: equipamento, defeito_relatado: descricao 
         }]);
-        
         if(error) throw error;
-        
-        document.getElementById('os-equipamento').value = "";
-        document.getElementById('os-descricao').value = "";
+        document.getElementById('os-equipamento').value = ""; document.getElementById('os-descricao').value = "";
         listarOrdens(); carregarDadosDashboard();
         alert("Ordem de serviço aberta com sucesso!");
-    } catch(e){ 
-        console.error(e);
-        alert("Erro ao registrar OS."); 
-    }
+    } catch(e){}
 }
 
 async function listarOrdens() {
     try {
-        // Busca direta e sem cruzamento complexo para evitar quebras por Foreign Keys
-        const { data: ordens, error } = await supabaseClient
-            .from('ordens_servico')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
+        // Puxa as ordens cruzando de forma inteligente com os novos campos de endereço dos clientes
+        const { data: ordens, error } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone, cpf_cnpj, endereco, cidade)`).order('created_at', { ascending: false });
         if (error) throw error;
 
-        // Tenta achar tanto o ID clássico quanto o modificado para o Tailwind do seu HTML
-        let corpo = document.getElementById('tabela-ordens-corpo');
-        if (!corpo) corpo = document.getElementById('tabela-ordens'); 
-        if (!corpo) return;
+        const corpo = document.getElementById('tabela-ordens-corpo');
+        if (!corpo) return; 
         corpo.innerHTML = "";
 
         if (ordens && ordens.length > 0) {
             ordens.forEach(o => {
-                const dataFmt = o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : 'S/D';
-                
-                const statusLimpo = (o.status || "").trim().toLowerCase();
-                let valorSelect = "Em Análise";
-                let badgeColor = "bg-gray-100 text-gray-800"; 
+                const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
+                const statusFmt = (o.status || "").trim().toLowerCase();
+                let valorSelect = "Em Análise", badgeColor = "bg-gray-100 text-gray-800";
 
-                if (statusLimpo.includes("andamento") || statusLimpo.includes("bancada")) {
-                    valorSelect = "Em Andamento";
-                    badgeColor = "bg-amber-100 text-amber-800"; 
-                } else if (statusLimpo.includes("peca") || statusLimpo.includes("sem")) {
-                    valorSelect = "Aguardando Peça";
-                    badgeColor = "bg-purple-100 text-purple-800"; 
-                } else if (statusLimpo.includes("concluid") || statusLimpo.includes("pronto")) {
-                    valorSelect = "Concluido";
-                    badgeColor = "bg-green-100 text-green-800"; 
-                }
+                if (statusFmt.includes("andamento") || statusFmt.includes("bancada")) { valorSelect = "Em Andamento"; badgeColor = "bg-amber-100 text-amber-800"; }
+                else if (statusFmt.includes("peca") || statusFmt.includes("sem")) { valorSelect = "Aguardando Peça"; badgeColor = "bg-purple-100 text-purple-800"; }
+                else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800"; }
 
                 const dadosOSPrint = JSON.stringify({
-                    id: o.id,
-                    data: dataFmt,
-                    cliente: 'Cliente Lançado',
-                    telefone: '(74) Ver Clientes',
-                    equipamento: o.descricao_equipamento || 'Não informado',
-                    defeito: o.defeito_relatado || 'Não informado',
-                    status: o.status || 'Em Análise'
+                    id: o.id, data: dataFmt,
+                    cliente: o.clientes?.nome || 'Não informado',
+                    telefone: o.clientes?.telefone || 'Não informado',
+                    cpf: o.clientes?.cpf_cnpj || 'Não informado',
+                    local: `${o.clientes?.endereco || ''} - ${o.clientes?.cidade || ''}`,
+                    equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
-                    <tr class="hover:bg-gray-50 border-b border-gray-100 text-sm">
-                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).toUpperCase()}</td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">Código Cliente: ${o.cliente_id || 'Avulso'}</td>
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${o.id}</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
@@ -534,11 +399,9 @@ async function listarOrdens() {
                     </tr>`;
             });
         } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
-    } catch(e) {
-        console.error("Erro ao listar ordens:", e);
-    }
+    } catch(e) {}
 }
 
 async function atualizarStatusOS(id, novoStatus) {
@@ -549,162 +412,56 @@ async function atualizarStatusOS(id, novoStatus) {
 function imprimirLaudoOS(os) {
     const windowLaudo = window.open('', '', 'width=800,height=900');
     windowLaudo.document.write(`
-        <html>
-        <head>
-            <title>Ordem de Serviço - MSP Tecnologia</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
-                .topo { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
-                .titulo { font-size: 24px; font-weight: bold; color: #1e293b; }
-                .info-empresa { text-align: right; font-size: 12px; color: #64748b; }
-                .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-                .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; }
-                .grid { display: flex; justify-content: space-between; flex-wrap: wrap; }
-                .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; }
-                .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; }
-                .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; }
-                .linha-assinatura { border-top: 1px solid #333; width: 250px; margin-bottom: 5px; }
-                @media print { body { padding: 0; } .secao { background: none; } }
-            </style>
-        </head>
-        <body>
-            <div class="topo">
-                <div>
-                    <div class="titulo">MSP TECNOLOGIA</div>
-                    <div style="font-size: 14px; font-weight: bold; color: #2563eb; margin-top: 2px;">COMPROVANTE DE ORDEM DE SERVIÇO</div>
-                </div>
-                <div class="info-empresa">
-                    <b>MSP Tecnologia & Assistência Técnica</b><br>
-                    Irecê - Bahia<br>
-                    Contato: (74) 99995-0922
-                </div>
-            </div>
-
-            <div class="secao">
-                <div class="secao-titulo">1. Identificação do Chamado Técnico</div>
-                <div class="grid">
-                    <div><b>Controle OS:</b> OS-${String(os.id).toUpperCase()}</div>
-                    <div><b>Data de Entrada:</b> ${os.data}</div>
-                    <div><b>Situação Atual:</b> 🟢 ${os.status}</div>
-                    <div><b>Técnico Responsável:</b> Maique Pereira</div>
-                </div>
-            </div>
-
-            <div class="secao">
-                <div class="secao-titulo">2. Informações do Cliente</div>
-                <div class="grid">
-                    <div><b>Nome/Razão Social:</b> ${os.cliente}</div>
-                    <div><b>Contato Telefônico:</b> ${os.telefone}</div>
-                </div>
-            </div>
-
-            <div class="secao">
-                <div class="secao-titulo">3. Dados do Equipamento</div>
-                <div class="grid">
-                    <div style="width: 100%"><b>Aparelho / Modelo / Componente:</b> ${os.equipamento}</div>
-                </div>
-            </div>
-
-            <div class="secao">
-                <div class="secao-titulo">4. Defeito Constatado / Descrição do Problema</div>
-                <div class="campo-texto">${os.defeito}</div>
-            </div>
-
-            <div class="secao">
-                <div class="secao-titulo">5. Parecer Técnico / Peças Aplicadas (Uso Exclusivo da Oficina)</div>
-                <div class="campo-texto" style="min-height: 120px; color: #94a3b8; font-style: italic;">Campos em branco para preenchimento manual de laudo técnico de bancada...</div>
-            </div>
-
-            <div class="assinaturas">
-                <div>
-                    <div class="linha-assinatura"></div>
-                    MSP Tecnologia
-                </div>
-                <div>
-                    <div class="linha-assinatura"></div>
-                    Autorização de Saída (Cliente)
-                </div>
-            </div>
-
+        <html><head><title>Ordem de Serviço</title><style>body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; } .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; } .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; } .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; } .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; } .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; } .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; } .linha-assinatura { border-top: 1px solid #333; width: 250px; margin-bottom: 5px; }</style></head><body>
+            <div class="topo"><div><div style="font-size:24px;font-bold">MSP TECNOLOGIA</div><div style="color:#2563eb;font-weight:bold">COMPROVANTE DE ORDEM DE SERVIÇO</div></div><div style="text-align:right;font-size:12px"><b>MSP Tecnologia & Assistência</b><br>Irecê - Bahia<br>Contato: (74) 99995-0922</div></div>
+            <div class="secao"><div class="secao-titulo">1. Identificação do Chamado</div><div class="grid"><div><b>Controle OS:</b> OS-${os.id}</div><div><b>Data Entrada:</b> ${os.data}</div><div><b>Situação:</b> ${os.status}</div><div><b>Técnico:</b> Maique Pereira</div></div></div>
+            <div class="secao"><div class="secao-titulo">2. Informações do Cliente</div><div class="grid"><div><b>Nome:</b> ${os.cliente}</div><div><b>Contato:</b> ${os.telefone}</div><div><b>CPF/CNPJ:</b> ${os.cpf}</div><div><b>Endereço:</b> ${os.local}</div></div></div>
+            <div class="secao"><div class="secao-titulo">3. Equipamento</div><div class="grid"><div style="width:100%"><b>Descrição:</b> ${os.equipamento}</div></div></div>
+            <div class="secao"><div class="secao-titulo">4. Ocorrência Relatada</div><div class="campo-texto">${os.defeito}</div></div>
+            <div class="secao"><div class="secao-titulo">5. Parecer de Bancada / Peças Aplicadas</div><div class="campo-texto" style="color:#94a3b8;font-style:italic">Preenchimento manual de laudo técnico técnico...</div></div>
+            <div class="assinaturas"><div><div class="linha-assinatura"></div>MSP Tecnologia</div><div><div class="linha-assinatura"></div>Assinatura Cliente</div></div>
             <script>window.print(); window.close();</script>
-        </body>
-        </html>
+        </body></html>
     `);
     windowLaudo.document.close();
 }
 
 // ==========================================
-// RELATÓRIOS FILTRADOS POR PERÍODO DE DATA
+// RELATÓRIOS FILTRADOS
 // ==========================================
 async function gerarRelatorioFiltrado() {
     const dataInicioStr = document.getElementById('rep-data-inicio').value;
     const dataFimStr = document.getElementById('rep-data-fim').value;
     const corpo = document.getElementById('tabela-relatorios-corpo');
-
-    if (!dataInicioStr || !dataFimStr) {
-        alert("🚨 Selecione as duas datas para filtrar o relatório!");
-        return;
-    }
-
-    corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center font-medium text-blue-600 animate-pulse">🔎 Processando fechamento de período...</td></tr>`;
+    if (!dataInicioStr || !dataFimStr) { alert("Selecione as duas datas!"); return; }
+    corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-blue-600 animate-pulse">🔎 Processando...</td></tr>`;
 
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, produtos(nome, preco)`).order('created_at', { ascending: true });
-
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, total_venda, produtos(nome, preco)`).order('created_at', { ascending: true });
         if (error) throw error;
+        const limiteInicio = new Date(dataInicioStr + 'T00:00:00'), limiteFim = new Date(dataFimStr + 'T23:59:59');
+        let somaPecas = 0, somaGeral = 0, htmlLinhas = "";
 
-        const limiteInicio = new Date(dataInicioStr + 'T00:00:00');
-        const limiteFim = new Date(dataFimStr + 'T23:59:59');
-
-        let somaPecas = 0, somaGeral = 0;
-        let htmlLinhas = "";
-
-        if (vendas && vendas.length > 0) {
+        if (vendas) {
             vendas.forEach(v => {
                 const dataVenda = new Date(v.created_at);
-                
                 if (dataVenda >= limiteInicio && dataVenda <= limiteFim) {
                     const totalLiquido = parseFloat(v.total_venda) || 0;
-                    const precoOriginalPeca = v.produtos ? (parseFloat(v.produtos.preco) || 0) * (parseInt(v.quantidade) || 1) : totalLiquido - (parseFloat(v.valor_servico) || 0);
-
-                    somaPecas += precoOriginalPeca;
-                    somaGeral += totalLiquido;
-
-                    const dataFmt = dataVenda.toLocaleDateString('pt-BR') + ' ' + dataVenda.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                    const itemTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Geral';
-
-                    htmlLinhas += `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100">
-                            <td class="p-3 font-mono text-gray-600">${dataFmt}</td>
-                            <td class="p-3 font-semibold text-gray-900">Venda Direta / Balcão</td>
-                            <td class="p-3 text-xs">${itemTexto}</td>
-                            <td class="p-3 font-mono text-gray-600">R$ ${(totalLiquido - precoOriginalPeca).toFixed(2).replace('.', ',')}</td>
-                            <td class="p-3 font-mono font-bold text-emerald-600">R$ ${totalLiquido.toFixed(2).replace('.', ',')}</td>
-                        </tr>
-                    `;
+                    const precoOriginalPeca = v.produtos ? (parseFloat(v.produtos.preco) || 0) * (parseInt(v.quantidade) || 1) : totalLiquido;
+                    somaPecas += precoOriginalPeca; somaGeral += totalLiquido;
+                    htmlLinhas += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 font-mono">${dataVenda.toLocaleDateString('pt-BR')}</td><td class="p-3 font-semibold">Balcão</td><td class="p-3 text-xs">${v.produtos?.nome || 'Geral'}</td><td class="p-3 font-mono">R$ ${(totalLiquido - precoOriginalPeca).toFixed(2)}</td><td class="p-3 font-mono font-bold text-emerald-600">R$ ${totalLiquido.toFixed(2)}</td></tr>`;
                 }
             });
         }
-
-        if (htmlLinhas === "") {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 italic">⚠️ Nenhuma movimentação localizada nesse período.</td></tr>`;
-        } else {
-            corpo.innerHTML = htmlLinhas;
-        }
-
+        corpo.innerHTML = htmlLinhas || `<tr><td colspan="5" class="p-6 text-center text-gray-500 italic">Nenhuma movimentação.</td></tr>`;
         document.getElementById('rep-total-pecas').innerText = `R$ ${somaPecas.toFixed(2).replace('.', ',')}`;
         document.getElementById('rep-total-servicos').innerText = `R$ ${(somaGeral - somaPecas).toFixed(2).replace('.', ',')}`;
         document.getElementById('rep-total-geral').innerText = `R$ ${somaGeral.toFixed(2).replace('.', ',')}`;
-
-    } catch(e) {
-        console.error(e);
-        corpo.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-600 font-semibold">⚠️ Erro técnico ao processar relatório do período.</td></tr>`;
-    }
+    } catch(e){}
 }
 
-// UTILIÁRIOS GERAIS
 async function deletarItem(tabela, id, callbackSucesso) {
-    if (!confirm("Deseja realmente excluir este registro permanentemente?")) return;
+    if (!confirm("Deseja realmente excluir permanentemente?")) return;
     const { error } = await supabaseClient.from(tabela).delete().eq('id', id);
     if (error) alert("Erro ao deletar: " + error.message);
     else { callbackSucesso(); carregarDadosDashboard(); carregarSeletores(); }
