@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO INICIAL DO SUPABASE (NOME ALTERADO PARA EVITAR CONFLITO GLOBAL)
+// CONFIGURAÇÃO INICIAL DO SUPABASE
 const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
 let usuarioLogado = null;
@@ -117,7 +117,7 @@ async function verificarConexao() {
     }
 }
 
-// DASHBOARD GLOBAL - CONTABILIZANDO DA TABELA DE VENDAS_BALCAO
+// DASHBOARD GLOBAL
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
@@ -439,7 +439,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (COM LAUDO A4 FIXO)
+// SEÇÃO DE ORDENS DE SERVIÇO (TRATAMENTO DE ACENTOS)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -482,10 +482,27 @@ async function listarOrdens() {
         if (ordens && ordens.length > 0) {
             ordens.forEach(o => {
                 const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
-                let badgeColor = "bg-gray-100 text-gray-800";
-                if (o.status === "Em Andamento") badgeColor = "bg-amber-100 text-amber-800";
-                if (o.status === "Aguardando Peça") badgeColor = "bg-purple-100 text-purple-800";
-                if (o.status === "Concluido") badgeColor = "bg-green-100 text-green-800";
+                
+                // Normaliza o status vindo do banco (remove acentos, espaços extras e joga para minúsculo)
+                const statusNormalizado = (o.status || "")
+                    .trim()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase();
+
+                let opcaoSelecionada = "analise";
+                let badgeColor = "bg-gray-100 text-gray-800"; // Padrão Em Análise
+
+                if (statusNormalizado.includes("andamento") || statusNormalizado.includes("bancada")) {
+                    opcaoSelecionada = "andamento";
+                    badgeColor = "bg-amber-100 text-amber-800";
+                } else if (statusNormalizado.includes("peca") || statusNormalizado.includes("sem")) {
+                    opcaoSelecionada = "peca";
+                    badgeColor = "bg-purple-100 text-purple-800";
+                } else if (statusNormalizado.includes("concluid") || statusNormalizado.includes("pronto")) {
+                    opcaoSelecionada = "concluido";
+                    badgeColor = "bg-green-100 text-green-800";
+                }
 
                 const dadosOSPrint = JSON.stringify({
                     id: o.id,
@@ -494,7 +511,7 @@ async function listarOrdens() {
                     telefone: o.clientes?.telefone || 'Não informado',
                     equipamento: o.descricao_equipamento || 'Não informado',
                     defeito: o.defeito_relatado || 'Não informado',
-                    status: o.status
+                    status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
@@ -503,10 +520,10 @@ async function listarOrdens() {
                         <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
-                                <option value="Em Análise" ${o.status === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
-                                <option value="Em Andamento" ${o.status === 'Em Andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
-                                <option value="Aguardando Peça" ${o.status === 'Aguardando Peça' ? 'selected' : ''}>📦 Sem Peça</option>
-                                <option value="Concluido" ${o.status === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
+                                <option value="Em Análise" ${opcaoSelecionada === 'analise' ? 'selected' : ''}>⏳ Em Análise</option>
+                                <option value="Em Andamento" ${opcaoSelecionada === 'andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
+                                <option value="Aguardando Peça" ${opcaoSelecionada === 'peca' ? 'selected' : ''}>📦 Sem Peça</option>
+                                <option value="Concluido" ${opcaoSelecionada === 'concluido' ? 'selected' : ''}>✅ Concluído</option>
                             </select>
                         </td>
                         <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
