@@ -356,8 +356,101 @@ async function listarVendas() {
 }
 
 function imprimirReciboVenda(v) {
-    const janelaImpressao = window.open('', '', 'width=600,height=700');
-    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${v.servico ? `<div>🔧 <b>Serviço:</b> ${v.servico}</div>` : ''}${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
+    const janelaImpressao = window.open('', '', 'width=620,height=750');
+    janelaImpressao.document.write(`
+        <html>
+        <head>
+            <title>Recibo MSP Tecnologia</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; font-size: 13px; padding: 15px; color: #000; margin: 0; }
+                .text-center { text-align: center; }
+                .bold { font-weight: bold; }
+                .logo-container { text-align: center; margin-bottom: 10px; }
+                .logo-img { max-width: 130px; height: auto; object-fit: contain; }
+                .linha-divisoria { border-bottom: 1px dashed #000; margin: 10px 0; }
+                .flex-item { display: flex; justify-content: space-between; margin-bottom: 4px; }
+                .tabela-itens { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                .tabela-itens th { border-bottom: 1px solid #000; text-align: left; font-size: 12px; }
+                .tabela-itens td { padding: 4px 0; vertical-align: top; }
+                .calc-total { font-size: 15px; font-weight: bold; margin-top: 8px; }
+                .rodape-msg { font-size: 10px; text-align: center; margin-top: 25px; font-style: italic; line-height: 1.3; }
+                .dados-empresa { font-size: 11px; text-align: center; margin-bottom: 10px; line-height: 1.4; }
+                @media print { body { padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="logo-container">
+                <img src="https://i.postimg.cc/QC1hxmgG/Chat-GPT-Image-4-de-fev-de-2026-20-29-11-(1).png" class="logo-img" alt="MSP Tecnologia">
+            </div>
+
+            <div class="dados-empresa">
+                <b>MSP TECNOLOGIA</b><br>
+                CNPJ: 00.000.000/0001-00<br>
+                Rua Augusto Pereira, Centro - Irecê - BA<br>
+                Contato/WhatsApp: (74) 99995-0922
+            </div>
+            
+            <div class="linha-divisoria"></div>
+            
+            <div class="flex-item"><span><b>CUPOM COMPROVANTE:</b></span> <span>BAL-${v.id}</span></div>
+            <div class="flex-item"><span><b>DATA/HORA:</b></span> <span>${v.data}</span></div>
+            
+            <div class="linha-divisoria"></div>
+            
+            <div style="font-size: 12px; margin-bottom: 4px;"><b>DADOS DO CLIENTE:</b></div>
+            <div class="flex-item"><span>Nome:</span> <span>${v.cliente}</span></div>
+            ${v.telefone ? `<div class="flex-item"><span>Contato:</span> <span>${v.telefone}</span></div>` : ''}
+            
+            <div class="linha-divisoria"></div>
+            
+            <table class="tabela-itens">
+                <thead>
+                    <tr>
+                        <th>DESCRIÇÃO QTD</th>
+                        <th style="text-align: right;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${v.qtd}x ${v.item}</td>
+                        <td style="text-align: right;">R$ ${(v.valor_item * v.qtd).toFixed(2).replace('.', ',')}</td>
+                    </tr>
+                    ${parseFloat(v.mao_obra) > 0 ? `
+                    <tr>
+                        <td>🔧 Mão de Obra / Serviço Executado</td>
+                        <td style="text-align: right;">R$ ${parseFloat(v.mao_obra).toFixed(2).replace('.', ',')}</td>
+                    </tr>` : ''}
+                </tbody>
+            </table>
+
+            ${v.servico && v.servico !== 'Venda Direta' ? `
+                <div style="background: #f5f5f5; padding: 6px; border: 1px dashed #000; margin-top: 8px; font-size: 11px;">
+                    <b>Detalhamento Técnico:</b><br>
+                    ${v.servico}
+                </div>
+            ` : ''}
+
+            <div class="linha-divisoria"></div>
+            
+            <div class="flex-item calc-total">
+                <span>TOTAL LÍQUIDO:</span>
+                <span>R$ ${parseFloat(v.total).toFixed(2).replace('.', ',')}</span>
+            </div>
+            
+            <div class="linha-divisoria"></div>
+            
+            <div class="rodape-msg">
+                <b>TERMO DE GARANTIA:</b><br>
+                Garantia legal de 90 dias para componentes substituídos.<br>
+                A quebra física ou violação dos lacres MSP<br>
+                invalidará o termo de cobertura automaticamente.<br><br>
+                <b>Obrigado pela preferência!</b>
+            </div>
+
+            <script>window.print(); window.close();<\/script>
+        </body>
+        </html>
+    `);
     janelaImpressao.document.close();
 }
 
@@ -450,8 +543,8 @@ function imprimirLaudoOS(os) {
         <html><head><title>Ordem de Serviço - MSP Tecnologia</title>
         <style>
             body { font-family: Arial, sans-serif; padding: 30px; color: #333; line-height: 1.5; font-size: 13px; } 
-            .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; } 
-            .titulo { font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; } 
+            .topo { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; } 
+            .logo-img { max-width: 140px; height: auto; object-fit: contain; }
             .secao { background: #f8fafc; padding: 12px 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; } 
             .secao-titulo { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; } 
             .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 6px; } 
@@ -461,12 +554,56 @@ function imprimirLaudoOS(os) {
             .linha-assinatura { border-top: 1px solid #333; width: 260px; margin-bottom: 5px; }
             @media print { body { padding: 0; } .secao { background: none; } .contrato { background: none; } }
         </style></head><body>
-            <div class="topo"><div><div class="titulo">MSP TECNOLOGIA</div><div style="color:#2563eb;font-weight:bold;font-size:13px;margin-top:2px;">DOCUMENTO DE ENTRADA & TERMO DE ASSISTÊNCIA TÉCNICA</div></div><div style="text-align:right;font-size:11px;color:#475569"><b>MSP Tecnologia</b><br>Irecê - Bahia<br>Contato: (74) 99995-0922</div></div>
-            <div class="secao"><div class="secao-titulo">1. Identificação do Registro</div><div class="grid"><div><b>Ordem de Serviço:</b> OS-${os.id}</div><div><b>Data de Entrada:</b> ${os.data}</div><div><b>Fase Atual:</b> ${os.status}</div><div><b>Técnico Responsável:</b> Maique Pereira</div></div></div>
-            <div class="secao"><div class="secao-titulo">2. Dados do Proprietário</div><div class="grid"><div><b>Nome do Cliente:</b> ${os.cliente}</div><div><b>Telefone/WhatsApp:</b> ${os.telefone}</div><div><b>CPF/CNPJ:</b> ${os.cpf}</div><div><b>Endereço/Cidade:</b> ${os.local}</div></div></div>
-            <div class="secao"><div class="secao-titulo">3. Especificações do Equipamento</div><div class="grid"><div style="width:100%"><b>Descrição do Aparelho:</b> ${os.equipamento}</div></div></div>
-            <div class="secao"><div class="secao-titulo">4. Defeito e Sintomas Relatados</div><div class="campo-texto">${os.defeito}</div></div>
-            <div class="secao"><div class="secao-titulo">5. Diagnóstico de Laboratório / Peças Utilizadas</div><div class="campo-texto" style="color:#94a3b8;font-style:italic;min-height:90px">Para preenchimento manual de laudo técnico técnico...</div></div>
+            
+            <div class="topo">
+                <div>
+                    <img src="https://i.postimg.cc/QC1hxmgG/Chat-GPT-Image-4-de-fev-de-2026-20-29-11-(1).png" class="logo-img" alt="MSP Tecnologia">
+                    <div style="color:#2563eb;font-weight:bold;font-size:12px;margin-top:5px;letter-spacing:0.5px;">DOCUMENTO DE ENTRADA & ASSISTÊNCIA TÉCNICA</div>
+                </div>
+                <div style="text-align:right; font-size:12px; line-height:1.4; color:#0f172a">
+                    <b>MSP TECNOLOGIA</b><br>
+                    CNPJ: 00.000.000/0001-00<br>
+                    Rua Augusto Pereira, Centro - Irecê - BA<br>
+                    <b>Contato: (74) 99995-0922</b>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">1. Identificação do Registro</div>
+                <div class="grid">
+                    <div><b>Ordem de Serviço:</b> OS-${os.id}</div>
+                    <div><b>Data de Entrada:</b> ${os.data}</div>
+                    <div><b>Fase Atual:</b> ${os.status}</div>
+                    <div><b>Técnico Responsável:</b> Maique Pereira</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">2. Dados do Proprietário (Cliente)</div>
+                <div class="grid">
+                    <div><b>Nome do Cliente:</b> ${os.cliente}</div>
+                    <div><b>Telefone/WhatsApp:</b> ${os.telefone}</div>
+                    <div><b>CPF/CNPJ:</b> ${os.cpf}</div>
+                    <div><b>Endereço/Cidade:</b> ${os.local}</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">3. Especificações do Equipamento</div>
+                <div class="grid">
+                    <div style="width:100%"><b>Descrição do Aparelho:</b> ${os.equipamento}</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">4. Defeito e Sintomas Relatados</div>
+                <div class="campo-texto">${os.defeito}</div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">5. Diagnóstico de Laboratório / Peças Utilizadas</div>
+                <div class="campo-texto" style="color:#94a3b8;font-style:italic;min-height:90px">Para preenchimento manual de laudo técnico...</div>
+            </div>
             
             <div class="contrato">
                 <b>TERMOS DO CONTRATO DE PRESTAÇÃO DE SERVIÇO E CONDIÇÕES LEGAIS:</b><br>
@@ -475,13 +612,15 @@ function imprimirLaudoOS(os) {
                 3. <b>CLÁUSULA DE ABANDONO:</b> Nos termos do Art. 1.275 da Lei nº 10.406 (Código Civil), o equipamento que não for retirado pelo cliente no prazo máximo de <b>90 (noventa) dias</b> a contar da data de notificação de conclusão do serviço ou rejeição do orçamento, será considerado oficialmente <b>ABANDONADO</b>. Decorrido este período, a MSP Tecnologia fica expressamente autorizada a vender, desmontar ou alienar o objeto para cobrir custos de mão de obra, estocagem e autopeças aplicadas.
             </div>
 
-            <div class="assinaturas"><div><div class="linha-assinatura"></div>MSP Tecnologia</div><div><div class="linha-assinatura"></div>De acordo com os termos (Assinatura do Cliente)</div></div>
-            <script>window.print(); window.close();</script>
+            <div class="assinaturas">
+                <div><div class="linha-assinatura"></div>MSP Tecnologia</div>
+                <div><div class="linha-assinatura"></div>De acordo com os termos (Assinatura do Cliente)</div>
+            </div>
+            <script>window.print(); window.close();<\/script>
         </body></html>
     `);
     windowLaudo.document.close();
 }
-
 // ==========================================
 // RELATÓRIOS FILTRADOS (CORREÇÃO DE CHAMADO)
 // ==========================================
