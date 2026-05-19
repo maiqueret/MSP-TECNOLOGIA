@@ -139,7 +139,7 @@ async function carregarDadosDashboard() {
 }
 
 // ==========================================
-// SEÇÃO DE CLIENTES (SALVANDO METADADOS DE FORMA SEGURA)
+// SEÇÃO DE CLIENTES
 // ==========================================
 if (document.getElementById('form-cliente')) {
     document.getElementById('form-cliente').addEventListener('submit', async (e) => {
@@ -150,11 +150,9 @@ if (document.getElementById('form-cliente')) {
         const endereco = document.getElementById('cli-endereco').value;
         const cidade = document.getElementById('cli-cidade').value;
 
-        // Envia apenas o que o banco possui de colunas reais
         const { data, error } = await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj }]).select();
         
         if (!error && data && data.length > 0) {
-            // Salva endereço e cidade localmente atrelado ao ID do cliente
             const clienteId = data[0].id;
             localStorage.setItem(`cli_meta_${clienteId}`, JSON.stringify({ endereco, cidade }));
         }
@@ -167,7 +165,6 @@ if (document.getElementById('form-cliente')) {
 async function listarClientes() {
     try {
         const busca = document.getElementById('busca-cliente')?.value.toLowerCase() || "";
-        // Busca apenas campos reais existentes no banco
         const { data: lista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj').order('nome', { ascending: true });
         const corpo = document.getElementById('tabela-clientes-corpo');
         if (!corpo) return;
@@ -241,7 +238,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO
+// SEÇÃO DE VENDAS DE BALCÃO (CORRIGIDA)
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -294,7 +291,7 @@ async function executarVendaBalcao() {
             quantidade: qtd, 
             valor_servico: valorMaoDeObra, 
             total_venda: totalVendaCalculada,
-            descricao_servico: descricaoServico
+            descricao_servico: descricaoServico || "Venda Direta"
         }]);
         if (error) throw error;
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
@@ -325,17 +322,17 @@ async function listarVendas() {
                 const cli = clientesLista ? clientesLista.find(c => String(c.id) === String(v.cliente_id)) : null;
                 const prod = produtosLista ? produtosLista.find(p => String(p.id) === String(v.produto_id)) : null;
 
-                const clienteNome = cli ? cli.nome : 'Cliente Código: ' + v.cliente_id;
-                const pecaTexto = prod ? `📦 ${prod.nome} (x${v.quantidade})` : 'Item Código: ' + v.produto_id;
-                const servicoTexto = v.descricao_servico ? `<br><span class="text-slate-500">🔧 ${v.descricao_servico}</span>` : '';
+                const clienteNome = cli ? cli.nome : 'Cliente ID: ' + v.cliente_id;
+                const pecaTexto = prod ? `📦 ${prod.nome} (x${v.quantidade})` : 'Item ID: ' + v.produto_id;
+                const servicoTexto = v.descricao_servico ? `<br><span class="text-slate-500 text-xs">🔧 ${v.descricao_servico}</span>` : '';
                 
                 const dadosRecibo = JSON.stringify({
-                    id: v.id, data: dataFmt, cliente: cli ? cli.nome : 'Cliente', telefone: cli ? cli.telefone : '', item: prod ? prod.nome : 'Item', qtd: v.quantidade, valor_item: prod ? prod.preco : 0, mao_obra: v.valor_servico, total: totalItem, servico: v.descricao_servico || ''
+                    id: v.id, data: dataFmt, cliente: clienteNome, telefone: cli ? cli.telefone : '', item: prod ? prod.nome : 'Item', qtd: v.quantidade, valor_item: prod ? prod.preco : 0, mao_obra: v.valor_servico, total: totalItem, servico: v.descricao_servico || ''
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
-                        <td class="p-3 md:p-4 font-mono text-gray-600">${dataFmt}</td>
+                        <td class="p-3 md:p-4 font-mono text-gray-600 text-xs">${dataFmt}</td>
                         <td class="p-3 md:p-4 font-semibold text-gray-900">${clienteNome}</td>
                         <td class="p-3 md:p-4 text-xs text-gray-700">${pecaTexto} ${servicoTexto}</td>
                         <td class="p-3 md:p-4 font-bold text-emerald-600 font-mono">R$ ${totalItem.toFixed(2).replace('.', ',')}</td>
@@ -360,7 +357,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO
+// SEÇÃO DE ORDENS DE SERVIÇO (DESIGN RESTAURADO)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -386,7 +383,6 @@ async function listarOrdens() {
         const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('id', { ascending: false });
         if (erroOS) throw erroOS;
 
-        // Busca apenas colunas seguras da tabela de clientes
         const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
@@ -397,14 +393,13 @@ async function listarOrdens() {
             ordens.forEach(o => {
                 const dataFmt = o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : 'S/D';
                 const statusFmt = (o.status || "").trim().toLowerCase();
-                let valorSelect = "Em Análise", badgeColor = "bg-gray-100 text-gray-800";
+                let valorSelect = "Em Análise", badgeColor = "bg-gray-100 text-gray-800 border-gray-300";
 
-                if (statusFmt.includes("andamento") || statusFmt.includes("bancada")) { valorSelect = "Em Andamento"; badgeColor = "bg-amber-100 text-amber-800"; }
-                else if (statusFmt.includes("peca") || statusFmt.includes("sem")) { valorSelect = "Aguardando Peça"; badgeColor = "bg-purple-100 text-purple-800"; }
-                else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800"; }
+                if (statusFmt.includes("andamento") || statusFmt.includes("bancada")) { valorSelect = "Em Andamento"; badgeColor = "bg-amber-100 text-amber-800 border-amber-300"; }
+                else if (statusFmt.includes("peca") || statusFmt.includes("sem")) { valorSelect = "Aguardando Peça"; badgeColor = "bg-purple-100 text-purple-800 border-purple-300"; }
+                else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800 border-green-300"; }
 
                 const clienteEncontrado = clientesLista ? clientesLista.find(c => String(c.id) === String(o.cliente_id)) : null;
-                // Resgata o endereço salvo na memória local de forma segura
                 const metaLocal = clienteEncontrado ? JSON.parse(localStorage.getItem(`cli_meta_${clienteEncontrado.id}`)) : null;
 
                 const dadosOSPrint = JSON.stringify({
@@ -416,31 +411,30 @@ async function listarOrdens() {
                     equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
+                // RENDERIZANDO A LINHA COM DESIGN PREMIUM E SCANNÁVEL
                 corpo.innerHTML += `
-                    <tr class="hover:bg-gray-50 border-b border-gray-100">
-                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${o.id}</td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">${clienteEncontrado ? clienteEncontrado.nome : 'Cliente ID: ' + o.cliente_id}</td>
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-gray-200">
+                        <td class="p-3 md:p-4 font-mono font-bold text-gray-600 text-xs">OS-${o.id}</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900 text-sm">${clienteEncontrado ? clienteEncontrado.nome : 'ID: ' + o.cliente_id}</td>
                         <td class="p-3 md:p-4">
-                            <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
+                            <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border-2 shadow-xs ${badgeColor} focus:outline-none cursor-pointer transition-all">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
                                 <option value="Em Andamento" ${valorSelect === 'Em Andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
                                 <option value="Aguardando Peça" ${valorSelect === 'Aguardando Peça' ? 'selected' : ''}>📦 Sem Peça</option>
                                 <option value="Concluido" ${valorSelect === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
                             </select>
                         </td>
-                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
+                        <td class="p-3 md:p-4 text-xs"><span class="font-bold text-slate-800 text-sm">${o.descricao_equipamento}</span><br><span class="text-gray-500 text-xs mt-0.5 block">${o.defeito_relatado}</span></td>
                         <td class="p-3 md:p-4 text-center space-x-1 whitespace-nowrap">
-                            <button onclick="imprimirLaudoOS(${dadosOSPrint})" class="text-blue-600 hover:text-blue-900 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 cursor-pointer">🖨️ Via A4</button>
-                            <button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-800 cursor-pointer text-xs">Remover</button>
+                            <button onclick="imprimirLaudoOS(${dadosOSPrint})" class="text-blue-600 hover:text-white font-bold text-xs bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-lg border border-blue-300 shadow-xs cursor-pointer transition-all">🖨️ Via A4</button>
+                            <button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 rounded-md hover:bg-red-50 transition-all cursor-pointer">Remover</button>
                         </td>
                     </tr>`;
             });
         } else {
             corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
-    } catch(e) {
-        console.error("Erro fatal ao listar ordens:", e);
-    }
+    } catch(e) {}
 }
 
 async function atualizarStatusOS(id, novoStatus) {
@@ -448,17 +442,39 @@ async function atualizarStatusOS(id, novoStatus) {
     listarOrdens(); carregarDadosDashboard();
 }
 
+// CONTRATO LEGAL COMPLETO COM CLÁUSULA DE ABANDONO DE 90 DIAS NA VIA A4
 function imprimirLaudoOS(os) {
-    const windowLaudo = window.open('', '', 'width=800,height=900');
+    const windowLaudo = window.open('', '', 'width=850,height=900');
     windowLaudo.document.write(`
-        <html><head><title>Ordem de Serviço</title><style>body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; } .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; } .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; } .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; } .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; } .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; } .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; } .linha-assinatura { border-top: 1px solid #333; width: 250px; margin-bottom: 5px; }</style></head><body>
-            <div class="topo"><div><div style="font-size:24px;font-bold">MSP TECNOLOGIA</div><div style="color:#2563eb;font-weight:bold">COMPROVANTE DE ORDEM DE SERVIÇO</div></div><div style="text-align:right;font-size:12px"><b>MSP Tecnologia & Assistência</b><br>Irecê - Bahia<br>Contato: (74) 99995-0922</div></div>
-            <div class="secao"><div class="secao-titulo">1. Identificação do Chamado</div><div class="grid"><b>Controle OS:</b> OS-${os.id}</div><div><b>Data Entrada:</b> ${os.data}</div><div><b>Situação:</b> ${os.status}</div><div><b>Técnico:</b> Maique Pereira</div></div></div>
-            <div class="secao"><div class="secao-titulo">2. Informações do Cliente</div><div class="grid"><div><b>Nome:</b> ${os.cliente}</div><div><b>Contato:</b> ${os.telefone}</div><div><b>CPF/CNPJ:</b> ${os.cpf}</div><div><b>Endereço:</b> ${os.local}</div></div></div>
-            <div class="secao"><div class="secao-titulo">3. Equipamento</div><div class="grid"><div style="width:100%"><b>Descrição:</b> ${os.equipamento}</div></div></div>
-            <div class="secao"><div class="secao-titulo">4. Ocorrência Relatada</div><div class="campo-texto">${os.defeito}</div></div>
-            <div class="secao"><div class="secao-titulo">5. Parecer de Bancada / Peças Aplicadas</div><div class="campo-texto" style="color:#94a3b8;font-style:italic">Preenchimento manual de laudo técnico técnico...</div></div>
-            <div class="assinaturas"><div><div class="linha-assinatura"></div>MSP Tecnologia</div><div><div class="linha-assinatura"></div>Assinatura Cliente</div></div>
+        <html><head><title>Ordem de Serviço - MSP Tecnologia</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 30px; color: #333; line-height: 1.5; font-size: 13px; } 
+            .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; } 
+            .titulo { font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; } 
+            .secao { background: #f8fafc; padding: 12px 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; } 
+            .secao-titulo { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; tracking-wider: 0.5px; } 
+            .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 6px; } 
+            .campo-texto { min-height: 60px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; font-size: 13px; } 
+            .contrato { font-size: 10px; color: #475569; text-align: justify; margin-top: 15px; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; background: #fff; }
+            .assinaturas { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; } 
+            .linha-assinatura { border-top: 1px solid #333; width: 260px; margin-bottom: 5px; }
+            @media print { body { padding: 0; } .secao { background: none; } .contrato { background: none; } }
+        </style></head><body>
+            <div class="topo"><div><div class="titulo">MSP TECNOLOGIA</div><div style="color:#2563eb;font-weight:bold;font-size:13px;margin-top:2px;">DOCUMENTO DE ENTRADA & TERMO DE ASSISTÊNCIA TÉCNICA</div></div><div style="text-align:right;font-size:11px;color:#475569"><b>MSP Tecnologia</b><br>Irecê - Bahia<br>Contato: (74) 99995-0922</div></div>
+            <div class="secao"><div class="secao-titulo">1. Identificação do Registro</div><div class="grid"><div><b>Ordem de Serviço:</b> OS-${os.id}</div><div><b>Data de Entrada:</b> ${os.data}</div><div><b>Fase Atual:</b> ${os.status}</div><div><b>Técnico Responsável:</b> Maique Pereira</div></div></div>
+            <div class="secao"><div class="secao-titulo">2. Dados do Proprietário</div><div class="grid"><div><b>Nome do Cliente:</b> ${os.cliente}</div><div><b>Telefone/WhatsApp:</b> ${os.telefone}</div><div><b>CPF/CNPJ:</b> ${os.cpf}</div><div><b>Endereço/Cidade:</b> ${os.local}</div></div></div>
+            <div class="secao"><div class="secao-titulo">3. Especificações do Equipamento</div><div class="grid"><div style="width:100%"><b>Descrição do Aparelho:</b> ${os.equipamento}</div></div></div>
+            <div class="secao"><div class="secao-titulo">4. Defeito e Sintomas Relatados</div><div class="campo-texto">${os.defeito}</div></div>
+            <div class="secao"><div class="secao-titulo">5. Diagnóstico de Laboratório / Peças Utilizadas</div><div class="campo-texto" style="color:#94a3b8;font-style:italic;min-height:90px">Para preenchimento manual de laudo técnico técnico...</div></div>
+            
+            <div class="contrato">
+                <b>TERMOS DO CONTRATO DE PRESTAÇÃO DE SERVIÇO E CONDIÇÕES LEGAIS:</b><br>
+                1. O diagnóstico inicial e orçamento serão comunicados ao cliente em até 48 horas úteis. A execução do serviço só ocorrerá após autorização expressa do proprietário.<br>
+                2. A garantia legal para serviços efetuados e peças substituídas é de 90 dias, cobrindo única e exclusivamente o componente reparado, cessando caso o lacre de segurança seja violado.<br>
+                3. <b>CLÁUSULA DE ABANDONO:</b> Nos termos do Art. 1.275 da Lei nº 10.406 (Código Civil), o equipamento que não for retirado pelo cliente no prazo máximo de <b>90 (noventa) dias</b> a contar da data de notificação de conclusão do serviço ou rejeição do orçamento, será considerado oficialmente <b>ABANDONADO</b>. Decorrido este período, a MSP Tecnologia fica expressamente autorizada a vender, desmontar ou alienar o objeto para cobrir custos de mão de obra, estocagem e autopeças aplicadas.
+            </div>
+
+            <div class="assinaturas"><div><div class="linha-assinatura"></div>MSP Tecnologia</div><div><div class="linha-assinatura"></div>De acordo com os termos (Assinatura do Cliente)</div></div>
             <script>window.print(); window.close();</script>
         </body></html>
     `);
