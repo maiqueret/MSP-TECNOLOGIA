@@ -114,10 +114,41 @@ async function verificarConexao() {
 // DASHBOARD CORRIGIDO - LENDO DIRETO DE ITENS_OS
 async function carregarDadosDashboard() {
     try {
-        const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
-        document.getElementById('dash-qtd-clientes').innerText = qtdClientes || 0;
-    } catch(e) {}
+        const { data: vendas } = await supabaseClient.from('itens_os').select('preco_unitario, quantidade, created_at');
+        
+        let totalGeral = 0, totalMes = 0, totalHoje = 0;
+        
+        const hojeObj = new Date();
+        const hojeAno = hojeObj.getFullYear();
+        const hojeMes = hojeObj.getMonth();
+        const hojeDia = hojeObj.getDate();
 
+        if (vendas) {
+            vendas.forEach(v => {
+                const precoUnit = parseFloat(v.preco_unitario) || 0;
+                const qtd = parseInt(v.quantidade) || 1;
+                const valorTotalItem = precoUnit * qtd;
+                
+                totalGeral += valorTotalItem;
+                
+                const dataVenda = new Date(v.created_at);
+                if (!isNaN(dataVenda.getTime())) {
+                    if (dataVenda.getFullYear() === hojeAno && dataVenda.getMonth() === hojeMes) {
+                        totalMes += valorTotalItem;
+                        if (dataVenda.getDate() === hojeDia) {
+                            totalHoje += valorTotalItem;
+                        }
+                    }
+                }
+            });
+        }
+
+        if(document.getElementById('dash-faturamento')) document.getElementById('dash-faturamento').innerText = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
+        if(document.getElementById('dash-faturamento-mes')) document.getElementById('dash-faturamento-mes').innerText = `R$ ${totalMes.toFixed(2).replace('.', ',')}`;
+        if(document.getElementById('dash-faturamento-dia')) document.getElementById('dash-faturamento-dia').innerText = `R$ ${totalHoje.toFixed(2).replace('.', ',')}`;
+    } catch(e) {
+        console.error("Erro no faturamento do dashboard:", e);
+    }
     try {
         const { count: qtdProdutos } = await supabaseClient.from('produtos').select('*', { count: 'exact', head: true });
         document.getElementById('dash-qtd-produtos').innerText = qtdProdutos || 0;
