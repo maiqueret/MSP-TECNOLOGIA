@@ -197,7 +197,7 @@ async function listarClientes() {
                 }
             });
         }
-    } catch(e){}
+    } catch(e) {}
 }
 
 // ==========================================
@@ -230,7 +230,7 @@ async function listarProdutos() {
                 }
             });
         }
-    } catch(e){}
+    } catch(e) {}
 }
 
 function abrirModalEditar(id, nome, preco, estoque) {
@@ -278,10 +278,10 @@ async function carregarSeletores() {
                 selProdVenda.innerHTML += `<option value="${p.id}" data-preco="${p.preco}" data-estoque="${p.estoque}" ${desabilitado}>${p.nome} - R$ ${p.preco.toFixed(2)} ${textoEstoque}</option>`;
             });
         }
-    } catch(e){}
+    } catch(e) {}
 }
 
-async function ejecutarVendaBalcao() {
+async function executarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
@@ -439,7 +439,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (TRATAMENTO DE ACENTOS)
+// SEÇÃO DE ORDENS DE SERVIÇO (NORMALIZAÇÃO COMPLETA DE STATUS)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -483,25 +483,28 @@ async function listarOrdens() {
             ordens.forEach(o => {
                 const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
                 
-                // Normaliza o status vindo do banco (remove acentos, espaços extras e joga para minúsculo)
-                const statusNormalizado = (o.status || "")
+                // NORMALIZAÇÃO DE SEGURANÇA CONTRA QUALQUER DIFERENÇA DE ACENTO OU CAIXA NO BANCO
+                const statusLimpo = (o.status || "")
                     .trim()
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
                     .toLowerCase();
 
-                let opcaoSelecionada = "analise";
-                let badgeColor = "bg-gray-100 text-gray-800"; // Padrão Em Análise
+                let valorSelect = "Em Análise";
+                let badgeColor = "bg-gray-100 text-gray-800"; // Cinza padrão
 
-                if (statusNormalizado.includes("andamento") || statusNormalizado.includes("bancada")) {
-                    opcaoSelecionada = "andamento";
-                    badgeColor = "bg-amber-100 text-amber-800";
-                } else if (statusNormalizado.includes("peca") || statusNormalizado.includes("sem")) {
-                    opcaoSelecionada = "peca";
-                    badgeColor = "bg-purple-100 text-purple-800";
-                } else if (statusNormalizado.includes("concluid") || statusNormalizado.includes("pronto")) {
-                    opcaoSelecionada = "concluido";
-                    badgeColor = "bg-green-100 text-green-800";
+                if (statusLimpo.includes("analise")) {
+                    valorSelect = "Em Análise";
+                    badgeColor = "bg-gray-100 text-gray-800";
+                } else if (statusLimpo.includes("andamento") || statusLimpo.includes("bancada")) {
+                    valorSelect = "Em Andamento";
+                    badgeColor = "bg-amber-100 text-amber-800"; // Amarelo
+                } else if (statusLimpo.includes("peca") || statusLimpo.includes("sem")) {
+                    valorSelect = "Aguardando Peça";
+                    badgeColor = "bg-purple-100 text-purple-800"; // Roxo
+                } else if (statusLimpo.includes("concluid") || statusLimpo.includes("pronto")) {
+                    valorSelect = "Concluido";
+                    badgeColor = "bg-green-100 text-green-800"; // Verde
                 }
 
                 const dadosOSPrint = JSON.stringify({
@@ -520,10 +523,10 @@ async function listarOrdens() {
                         <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
-                                <option value="Em Análise" ${opcaoSelecionada === 'analise' ? 'selected' : ''}>⏳ Em Análise</option>
-                                <option value="Em Andamento" ${opcaoSelecionada === 'andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
-                                <option value="Aguardando Peça" ${opcaoSelecionada === 'peca' ? 'selected' : ''}>📦 Sem Peça</option>
-                                <option value="Concluido" ${opcaoSelecionada === 'concluido' ? 'selected' : ''}>✅ Concluído</option>
+                                <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
+                                <option value="Em Andamento" ${valorSelect === 'Em Andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
+                                <option value="Aguardando Peça" ${valorSelect === 'Aguardando Peça' ? 'selected' : ''}>📦 Sem Peça</option>
+                                <option value="Concluido" ${valorSelect === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
                             </select>
                         </td>
                         <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
@@ -536,7 +539,7 @@ async function listarOrdens() {
         } else {
             corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
-    } catch(e){
+    } catch(e) {
         console.error("Erro ao listar ordens:", e);
     }
 }
