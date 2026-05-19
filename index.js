@@ -6,27 +6,33 @@ let usuarioLogado = null;
 
 // VERIFICAÇÃO AUTOMÁTICA DE SESSÃO AO CARREGAR A PÁGINA
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Escutar eventos do formulário de login
     const formLogin = document.getElementById("form-login");
     if (formLogin) {
         formLogin.addEventListener("submit", executarLogin);
     }
 
-    // 2. Checar se o usuário já tem uma sessão activa salva no navegador
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error || !session) {
-        // Sem usuário ativo: Garante que a tela de login apareça e bloqueia o app
         document.getElementById("tela-login").classList.remove("hidden");
         document.getElementById("app-conteudo").classList.add("hidden");
     } else {
-        // Usuário já está logado!
         usuarioLogado = session.user;
         liberarAcessoAplicativo();
     }
 });
 
-// FUNÇÃO PARA EXECUTAR O LOGIN COM E-MAIL E SENHA (CORRIGIDA)
+// FUNÇÃO DO OLHINHO PARA EXIBIR/OCULTAR A SENHA
+function toggleSenha() {
+    const campoSenha = document.getElementById("login-senha");
+    if (campoSenha.type === "password") {
+        campoSenha.type = "text";
+    } else {
+        campoSenha.type = "password";
+    }
+}
+
+// FUNÇÃO PARA EXECUTAR O LOGIN COM CAPTURA REAL DE ERROS
 async function executarLogin(e) {
     e.preventDefault();
     
@@ -50,15 +56,16 @@ async function executarLogin(e) {
     });
 
     if (error) {
-        // Tratar erros comuns de digitação de forma amigável
+        console.error("Erro completo do Supabase:", error);
+        
+        // Exibe o erro na caixa vermelha de forma crua para sabermos o que está travando
         if (error.message.includes("Invalid login credentials")) {
             erroDiv.innerText = "❌ E-mail ou senha incorretos!";
         } else {
-            erroDiv.innerText = "⚠️ Erro: " + error.message;
+            erroDiv.innerText = "⚠️ Resposta do Banco: " + error.message;
         }
         erroDiv.classList.remove("hidden");
     } else {
-        // Login com sucesso!
         usuarioLogado = data.user;
         liberarAcessoAplicativo();
     }
@@ -66,11 +73,9 @@ async function executarLogin(e) {
 
 // FUNÇÃO QUE LIBERA O APP E CARREGA OS DADOS DO BANCO
 function liberarAcessoAplicativo() {
-    // Esconde o Login e mostra o Painel Principal
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("app-conteudo").classList.remove("hidden");
     
-    // Dispara a leitura inicial das tabelas do banco de dados
     verificarConexao();
     carregarDadosDashboard();
     listarClientes();
@@ -86,7 +91,6 @@ async function executarLogoff() {
     if (error) {
         alert("Erro ao sair: " + error.message);
     } else {
-        // Limpa a tela e força a voltar para o login
         usuarioLogado = null;
         window.location.reload();
     }
@@ -334,7 +338,7 @@ async function carregarSeletores() {
     }
 }
 
-async function ejecutarVendaBalcao() {
+async function executarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value || null;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
@@ -507,7 +511,7 @@ async function listarOrdens() {
     }
 }
 
-async function atualizarStatusOS(id, novoStatus) {
+async function actualizarStatusOS(id, novoStatus) {
     const { error } = await supabase.from('ordens_servico').update({ status: novoStatus }).eq('id', id);
     if (error) alert(error.message);
     else {
