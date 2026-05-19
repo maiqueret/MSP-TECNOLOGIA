@@ -139,7 +139,7 @@ async function carregarDadosDashboard() {
 }
 
 // ==========================================
-// SEÇÃO DE CLIENTES
+// SEÇÃO DE CLIENTES (SALVANDO METADADOS DE FORMA SEGURA)
 // ==========================================
 if (document.getElementById('form-cliente')) {
     document.getElementById('form-cliente').addEventListener('submit', async (e) => {
@@ -150,7 +150,15 @@ if (document.getElementById('form-cliente')) {
         const endereco = document.getElementById('cli-endereco').value;
         const cidade = document.getElementById('cli-cidade').value;
 
-        await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj, endereco, city: cidade }]);
+        // Envia apenas o que o banco possui de colunas reais
+        const { data, error } = await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj }]).select();
+        
+        if (!error && data && data.length > 0) {
+            // Salva endereço e cidade localmente atrelado ao ID do cliente
+            const clienteId = data[0].id;
+            localStorage.setItem(`cli_meta_${clienteId}`, JSON.stringify({ endereco, cidade }));
+        }
+
         document.getElementById('form-cliente').reset();
         listarClientes(); carregarDadosDashboard(); carregarSeletores();
     });
@@ -159,18 +167,20 @@ if (document.getElementById('form-cliente')) {
 async function listarClientes() {
     try {
         const busca = document.getElementById('busca-cliente')?.value.toLowerCase() || "";
-        const { data: lista } = await supabaseClient.from('clientes').select('*').order('nome', { ascending: true });
+        // Busca apenas campos reais existentes no banco
+        const { data: lista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj').order('nome', { ascending: true });
         const corpo = document.getElementById('tabela-clientes-corpo');
         if (!corpo) return;
         corpo.innerHTML = "";
         if (lista) {
             lista.forEach(c => {
                 if (c.nome.toLowerCase().includes(busca) || (c.telefone && c.telefone.includes(busca))) {
+                    const meta = JSON.parse(localStorage.getItem(`cli_meta_${c.id}`)) || { endereco: 'Não informado', cidade: 'Irecê' };
                     corpo.innerHTML += `
                         <tr class="hover:bg-gray-50 border-b border-gray-100">
                             <td class="p-3 md:p-4 font-medium text-gray-900">${c.nome}</td>
                             <td class="p-3 md:p-4 text-slate-600 font-mono text-xs">${c.cpf_cnpj || 'Sem registro'}</td>
-                            <td class="p-3 md:p-4 text-xs text-gray-500">📍 ${c.endereco || ''} - ${c.city || ''}<br>📞 ${c.telefone || 'S/T'}</td>
+                            <td class="p-3 md:p-4 text-xs text-gray-500">📍 ${meta.endereco} - ${meta.cidade}<br>📞 ${c.telefone || 'S/T'}</td>
                             <td class="p-3 md:p-4 text-center"><button onclick="deletarItem('clientes', '${c.id}', listarClientes)" class="text-red-600 hover:text-red-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td>
                         </tr>`;
                 }
@@ -350,7 +360,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (ORDENAÇÃO CORRIGIDA POR ID)
+// SEÇÃO DE ORDENS DE SERVIÇO
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -373,11 +383,11 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        // CORREÇÃO CRÍTICA: Ordenação alterada de 'created_at' para 'id' para evitar erro fatal do banco
         const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('id', { ascending: false });
         if (erroOS) throw erroOS;
 
-        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj, endereco, city');
+        // Busca apenas colunas seguras da tabela de clientes
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return; 
@@ -394,13 +404,15 @@ async function listarOrdens() {
                 else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800"; }
 
                 const clienteEncontrado = clientesLista ? clientesLista.find(c => String(c.id) === String(o.cliente_id)) : null;
+                // Resgata o endereço salvo na memória local de forma segura
+                const metaLocal = clienteEncontrado ? JSON.parse(localStorage.getItem(`cli_meta_${clienteEncontrado.id}`)) : null;
 
                 const dadosOSPrint = JSON.stringify({
                     id: o.id, data: dataFmt,
                     cliente: clienteEncontrado ? clienteEncontrado.nome : 'Cliente Código: ' + o.cliente_id,
                     telefone: clienteEncontrado ? clienteEncontrado.telefone : 'Não informado',
                     cpf: clienteEncontrado ? (clienteEncontrado.cpf_cnpj || 'Não informado') : 'Não informado',
-                    local: clienteEncontrado ? `${clienteEncontrado.endereco || ''} - ${clienteEncontrado.city || ''}` : 'Não informado',
+                    local: metaLocal ? `${metaLocal.endereco} - ${metaLocal.cidade}` : 'Não informado',
                     equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
@@ -464,7 +476,7 @@ async function gerarRelatorioFiltrado() {
     corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-blue-600 animate-pulse">🔎 Processando...</td></tr>`;
 
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, total_venda, produtos(nome, preco)`).order('id', { ascending: true });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select('*').order('id', { ascending: true });
         if (error) throw error;
         const limiteInicio = new Date(dataInicioStr + 'T00:00:00'), limiteFim = new Date(dataFimStr + 'T23:59:59');
         let somaPecas = 0, somaGeral = 0, htmlLinhas = "";
@@ -474,9 +486,9 @@ async function gerarRelatorioFiltrado() {
                 const dataVenda = new Date(v.created_at);
                 if (dataVenda >= limiteInicio && dataVenda <= limiteFim) {
                     const totalLiquido = parseFloat(v.total_venda) || 0;
-                    const precoOriginalPeca = v.produtos ? (parseFloat(v.produtos.preco) || 0) * (parseInt(v.quantidade) || 1) : totalLiquido;
+                    const precoOriginalPeca = totalLiquido - (parseFloat(v.valor_servico) || 0);
                     somaPecas += precoOriginalPeca; somaGeral += totalLiquido;
-                    htmlLinhas += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 font-mono">${dataVenda.toLocaleDateString('pt-BR')}</td><td class="p-3 font-semibold">Balcão</td><td class="p-3 text-xs">${v.produtos?.nome || 'Geral'}</td><td class="p-3 font-mono">R$ ${(totalLiquido - precoOriginalPeca).toFixed(2)}</td><td class="p-3 font-mono font-bold text-emerald-600">R$ ${totalLiquido.toFixed(2)}</td></tr>`;
+                    htmlLinhas += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 font-mono">${dataVenda.toLocaleDateString('pt-BR')}</td><td class="p-3 font-semibold">Balcão</td><td class="p-3 text-xs">Venda Balcão</td><td class="p-3 font-mono">R$ ${precoOriginalPeca.toFixed(2)}</td><td class="p-3 font-mono font-bold text-emerald-600">R$ ${totalLiquido.toFixed(2)}</td></tr>`;
                 }
             });
         }
