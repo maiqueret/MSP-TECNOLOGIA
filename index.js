@@ -439,7 +439,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (NORMALIZAÇÃO COMPLETA DE STATUS)
+// SEÇÃO DE ORDENS DE SERVIÇO - RETORNO INDEPENDENTE DE ESTRUTURA
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -471,7 +471,7 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        // Busca simplificada direta na tabela de ordens
+        // Busca direta e sem cruzamento complexo para evitar quebras por Foreign Keys
         const { data: ordens, error } = await supabaseClient
             .from('ordens_servico')
             .select('*')
@@ -479,7 +479,9 @@ async function listarOrdens() {
         
         if (error) throw error;
 
-        const corpo = document.getElementById('tabela-ordens-corpo');
+        // Tenta achar tanto o ID clássico quanto o modificado para o Tailwind do seu HTML
+        let corpo = document.getElementById('tabela-ordens-corpo');
+        if (!corpo) corpo = document.getElementById('tabela-ordens'); 
         if (!corpo) return;
         corpo.innerHTML = "";
 
@@ -487,7 +489,6 @@ async function listarOrdens() {
             ordens.forEach(o => {
                 const dataFmt = o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : 'S/D';
                 
-                // Normalização simples do status
                 const statusLimpo = (o.status || "").trim().toLowerCase();
                 let valorSelect = "Em Análise";
                 let badgeColor = "bg-gray-100 text-gray-800"; 
@@ -506,17 +507,17 @@ async function listarOrdens() {
                 const dadosOSPrint = JSON.stringify({
                     id: o.id,
                     data: dataFmt,
-                    cliente: 'Cliente ID: ' + (o.cliente_id || 'N/A'),
-                    telefone: 'Ver cadastro',
+                    cliente: 'Cliente Lançado',
+                    telefone: '(74) Ver Clientes',
                     equipamento: o.descricao_equipamento || 'Não informado',
                     defeito: o.defeito_relatado || 'Não informado',
                     status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
-                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <tr class="hover:bg-gray-50 border-b border-gray-100 text-sm">
                         <td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).toUpperCase()}</td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">Cliente (Cód: ${o.cliente_id || '?'})</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">Código Cliente: ${o.cliente_id || 'Avulso'}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
@@ -525,7 +526,7 @@ async function listarOrdens() {
                                 <option value="Concluido" ${valorSelect === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
                             </select>
                         </td>
-                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento || 'N/A'}</span><br><span class="text-gray-500">${o.defeito_relatado || 'N/A'}</span></td>
+                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
                         <td class="p-3 md:p-4 text-center space-x-1 whitespace-nowrap">
                             <button onclick="imprimirLaudoOS(${dadosOSPrint})" class="text-blue-600 hover:text-blue-900 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 cursor-pointer">🖨️ Via A4</button>
                             <button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-800 cursor-pointer text-xs">Remover</button>
@@ -533,7 +534,7 @@ async function listarOrdens() {
                     </tr>`;
             });
         } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
     } catch(e) {
         console.error("Erro ao listar ordens:", e);
