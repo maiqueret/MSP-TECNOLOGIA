@@ -94,7 +94,6 @@ function mudarAba(aba) {
     document.getElementById('titulo-pagina').innerText = aba === 'dashboard' ? "📊 Dashboard" : aba === 'clientes' ? "👥 Clientes" : aba === 'produtos' ? "📦 Estoque Peças" : aba === 'vendas' ? "🛒 Balcão Caixa" : aba === 'ordens' ? "📋 Ordens Serv." : "📈 Relatórios";
 }
 
-// TESTE DE CONEXÃO
 async function verificarConexao() {
     try {
         await supabaseClient.from('clientes').select('id').limit(1);
@@ -104,7 +103,6 @@ async function verificarConexao() {
     }
 }
 
-// ATUALIZAÇÃO DO DASHBOARD
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
@@ -300,7 +298,7 @@ async function executarVendaBalcao() {
 
 async function listarVendas() {
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select('*').order('created_at', { ascending: false });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select('*').order('id', { ascending: false });
         if (error) throw error;
 
         const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone');
@@ -311,7 +309,7 @@ async function listarVendas() {
 
         if (vendas && vendas.length > 0) {
             vendas.forEach(v => {
-                const dataFmt = new Date(v.created_at).toLocaleString('pt-BR');
+                const dataFmt = v.created_at ? new Date(v.created_at).toLocaleString('pt-BR') : 'S/D';
                 const totalItem = parseFloat(v.total_venda) || 0;
                 
                 const cli = clientesLista ? clientesLista.find(c => String(c.id) === String(v.cliente_id)) : null;
@@ -352,7 +350,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO
+// SEÇÃO DE ORDENS DE SERVIÇO (ORDENAÇÃO CORRIGIDA POR ID)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -375,7 +373,8 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('created_at', { ascending: false });
+        // CORREÇÃO CRÍTICA: Ordenação alterada de 'created_at' para 'id' para evitar erro fatal do banco
+        const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('id', { ascending: false });
         if (erroOS) throw erroOS;
 
         const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj, endereco, city');
@@ -386,7 +385,7 @@ async function listarOrdens() {
 
         if (ordens && ordens.length > 0) {
             ordens.forEach(o => {
-                const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
+                const dataFmt = o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : 'S/D';
                 const statusFmt = (o.status || "").trim().toLowerCase();
                 let valorSelect = "Em Análise", badgeColor = "bg-gray-100 text-gray-800";
 
@@ -465,7 +464,7 @@ async function gerarRelatorioFiltrado() {
     corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-blue-600 animate-pulse">🔎 Processando...</td></tr>`;
 
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, total_venda, produtos(nome, preco)`).order('created_at', { ascending: true });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, total_venda, produtos(nome, preco)`).order('id', { ascending: true });
         if (error) throw error;
         const limiteInicio = new Date(dataInicioStr + 'T00:00:00'), limiteFim = new Date(dataFimStr + 'T23:59:59');
         let somaPecas = 0, somaGeral = 0, htmlLinhas = "";
