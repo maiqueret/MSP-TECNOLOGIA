@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO INICIAL DO SUPABASE
+// CONFIGURAÇÃO INICIAL DO SUPABASE (NOME ALTERADO PARA EVITAR CONFLITO GLOBAL)
 const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
 let usuarioLogado = null;
@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+// FUNÇÃO DO OLHINHO PARA EXIBIR/OCULTAR A SENHA
 function toggleSenha() {
     const campoSenha = document.getElementById("login-senha");
     if (campoSenha.type === "password") {
@@ -30,6 +31,7 @@ function toggleSenha() {
     }
 }
 
+// EXECUÇÃO DO LOGIN
 async function executarLogin(e) {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim();
@@ -54,6 +56,7 @@ async function executarLogin(e) {
     }
 }
 
+// INICIALIZAÇÃO DOS DADOS APÓS LOGIN
 function liberarAcessoAplicativo() {
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("app-conteudo").classList.remove("hidden");
@@ -71,12 +74,14 @@ function liberarAcessoAplicativo() {
     if(document.getElementById('rep-data-fim')) document.getElementById('rep-data-fim').value = hojeStr;
 }
 
+// LOGOFF
 async function executarLogoff() {
     await supabaseClient.auth.signOut();
     usuarioLogado = null;
     window.location.reload();
 }
 
+// NAVEGAÇÃO ENTRE ABAS
 function mudarAba(aba) {
     const telas = ['dashboard', 'clientes', 'produtos', 'vendas', 'ordens', 'relatorios'];
     telas.forEach(t => {
@@ -102,6 +107,7 @@ function mudarAba(aba) {
     document.getElementById('titulo-pagina').innerText = titulos[aba] || "Painel";
 }
 
+// TESTE DE CONEXÃO
 async function verificarConexao() {
     try {
         await supabaseClient.from('clientes').select('id').limit(1);
@@ -111,8 +117,23 @@ async function verificarConexao() {
     }
 }
 
-// DASHBOARD CORRIGIDO - LENDO DIRETO DE ITENS_OS
+// DASHBOARD GLOBAL (LENDO DE ITENS_OS)
 async function carregarDadosDashboard() {
+    try {
+        const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
+        document.getElementById('dash-qtd-clientes').innerText = qtdClientes || 0;
+    } catch(e) {}
+
+    try {
+        const { count: qtdProdutos } = await supabaseClient.from('produtos').select('*', { count: 'exact', head: true });
+        document.getElementById('dash-qtd-produtos').innerText = qtdProdutos || 0;
+    } catch(e) {}
+
+    try {
+        const { count: qtdOS } = await supabaseClient.from('ordens_servico').select('*', { count: 'exact', head: true });
+        document.getElementById('dash-qtd-os').innerText = qtdOS || 0;
+    } catch(e) {}
+
     try {
         const { data: vendas } = await supabaseClient.from('itens_os').select('preco_unitario, quantidade, created_at');
         
@@ -147,54 +168,7 @@ async function carregarDadosDashboard() {
         if(document.getElementById('dash-faturamento-mes')) document.getElementById('dash-faturamento-mes').innerText = `R$ ${totalMes.toFixed(2).replace('.', ',')}`;
         if(document.getElementById('dash-faturamento-dia')) document.getElementById('dash-faturamento-dia').innerText = `R$ ${totalHoje.toFixed(2).replace('.', ',')}`;
     } catch(e) {
-        console.error("Erro no faturamento do dashboard:", e);
-    }
-    try {
-        const { count: qtdProdutos } = await supabaseClient.from('produtos').select('*', { count: 'exact', head: true });
-        document.getElementById('dash-qtd-produtos').innerText = qtdProdutos || 0;
-    } catch(e) {}
-
-    try {
-        const { count: qtdOS } = await supabaseClient.from('ordens_servico').select('*', { count: 'exact', head: true });
-        document.getElementById('dash-qtd-os').innerText = qtdOS || 0;
-    } catch(e) {}
-
-    try {
-        // Puxa o faturamento com base no preço unitário dos itens vendidos
-        const { data: vendas } = await supabaseClient.from('itens_os').select('preco_unitario, quantidade, created_at');
-        
-        let totalGeral = 0, totalMes = 0, totalHoje = 0;
-        
-        const hojeObj = new Date();
-        const hojeAno = hojeObj.getFullYear();
-        const hojeMes = hojeObj.getMonth();
-        const hojeDia = hojeObj.getDate();
-
-        if (vendas) {
-            vendas.forEach(v => {
-                const precoUnit = parseFloat(v.preco_unitario) || 0;
-                const qtd = parseInt(v.quantidade) || 1;
-                const valorTotalItem = precoUnit * qtd;
-                
-                totalGeral += valorTotalItem;
-                
-                const dataVenda = new Date(v.created_at);
-                if (!isNaN(dataVenda.getTime())) {
-                    if (dataVenda.getFullYear() === hojeAno && dataVenda.getMonth() === hojeMes) {
-                        totalMes += valorTotalItem;
-                        if (dataVenda.getDate() === hojeDia) {
-                            totalHoje += valorTotalItem;
-                        }
-                    }
-                }
-            });
-        }
-
-        document.getElementById('dash-faturamento').innerText = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
-        document.getElementById('dash-faturamento-mes').innerText = `R$ ${totalMes.toFixed(2).replace('.', ',')}`;
-        document.getElementById('dash-faturamento-dia').innerText = `R$ ${totalHoje.toFixed(2).replace('.', ',')}`;
-    } catch(e) {
-        console.error(e);
+        console.error("Erro no dashboard:", e);
     }
 }
 
@@ -281,8 +255,35 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO - ATUALIZADA
+// SEÇÃO DE VENDAS DE BALCÃO (SALVANDO EM ITENS_OS)
 // ==========================================
+async function carregarSeletores() {
+    try {
+        const { data: clientes } = await supabaseClient.from('clientes').select('id, nome').order('nome');
+        const { data: produtos } = await supabaseClient.from('produtos').select('id, nome, preco, estoque').order('nome');
+        const selCliVenda = document.getElementById('vd-cliente');
+        const selProdVenda = document.getElementById('vd-produto');
+        const selCliOS = document.getElementById('os-cliente');
+
+        if (selCliVenda && clientes) {
+            selCliVenda.innerHTML = `<option value="">-- Selecione o Cliente --</option>`;
+            clientes.forEach(c => selCliVenda.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+        }
+        if (selCliOS && clientes) {
+            selCliOS.innerHTML = `<option value="">-- Selecione o Cliente --</option>`;
+            clientes.forEach(c => selCliOS.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+        }
+        if (selProdVenda && produtos) {
+            selProdVenda.innerHTML = `<option value="">-- Escolha o Item --</option>`;
+            produtos.forEach(p => {
+                const desabilitado = p.estoque <= 0 ? 'disabled' : '';
+                const textoEstoque = p.estoque <= 0 ? '(ESGOTADO)' : `(Estoque: ${p.estoque})`;
+                selProdVenda.innerHTML += `<option value="${p.id}" data-preco="${p.preco}" data-estoque="${p.estoque}" ${desabilitado}>${p.nome} - R$ ${p.preco.toFixed(2)} ${textoEstoque}</option>`;
+            });
+        }
+    } catch(e){}
+}
+
 async function executarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value;
@@ -307,7 +308,6 @@ async function executarVendaBalcao() {
     const precoFinalCalculado = precoUn + (valorMaoDeObra / qtd);
 
     try {
-        // Correção: Enviamos os dados garantindo a estrutura que o banco espera
         const { error } = await supabaseClient.from('itens_os').insert([{
             produto_id: produtoId,
             quantidade: qtd,
@@ -316,16 +316,13 @@ async function executarVendaBalcao() {
         
         if (error) throw error;
 
-        // Deduz do estoque físico
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
 
-        // Limpa os campos do formulário
         document.getElementById('vd-produto').value = "";
         document.getElementById('vd-qtd').value = "1";
         document.getElementById('vd-valor-servico').value = "0.00";
         if(document.getElementById('vd-descricao-servico')) document.getElementById('vd-descricao-servico').value = "";
         
-        // Atualiza a aplicação na hora
         await listarVendas(); 
         await listarProdutos(); 
         await carregarDadosDashboard(); 
@@ -334,13 +331,12 @@ async function executarVendaBalcao() {
         alert("Venda de balcão realizada e contabilizada com sucesso!");
     } catch (e) { 
         console.error("Erro na venda:", e);
-        alert("Erro ao salvar o item de venda. Verifique a consola do navegador."); 
+        alert("Erro ao salvar o item de venda. Verifique o console."); 
     }
 }
 
 async function listarVendas() {
     try {
-        // Removemos o filtro rígido de 'is null' para garantir que o Supabase traga os dados
         const { data: vendas, error } = await supabaseClient
             .from('itens_os')
             .select(`id, created_at, quantidade, preco_unitario, produtos(nome)`)
@@ -374,6 +370,7 @@ async function listarVendas() {
         console.error("Erro ao listar vendas:", e);
     }
 }
+
 async function deletarVenda(id) {
     if (!confirm("Deseja estornar essa venda?")) return;
     await supabaseClient.from('itens_os').delete().eq('id', id);
@@ -381,7 +378,7 @@ async function deletarVenda(id) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (NOMES DOS CAMPOS CORRIGIDOS)
+// SEÇÃO DE ORDENS DE SERVIÇO (CAMPOS DO BANCO CORRIGIDOS)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -392,7 +389,6 @@ async function finalizarOperacao() {
     if (!clienteId || !equipamento || !descricao) { alert("Preencha todos os campos!"); return; }
 
     try {
-        // Envia os nomes exatos do seu banco de dados: descricao_equipamento e defeito_relatado
         const { error } = await supabaseClient.from('ordens_servico').insert([{ 
             cliente_id: clienteId, 
             status, 
@@ -414,7 +410,6 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        // Mapeado com descricao_equipamento e defeito_relatado
         const { data: ordens } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome)`).order('created_at', { ascending: false });
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return;
