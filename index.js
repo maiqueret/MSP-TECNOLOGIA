@@ -7,7 +7,7 @@ let usuarioLogado = null;
 document.addEventListener("DOMContentLoaded", async () => {
     const formLogin = document.getElementById("form-login");
     if (formLogin) {
-        formLogin.addEventListener("submit", executarLogin);
+        formLogin.addEventListener("submit", executingLogin);
     }
 
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -32,7 +32,7 @@ function toggleSenha() {
 }
 
 // EXECUÇÃO DO LOGIN
-async function executarLogin(e) {
+async function executingLogin(e) {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim();
     const senha = document.getElementById("login-senha").value;
@@ -117,7 +117,7 @@ async function verificarConexao() {
     }
 }
 
-// DASHBOARD GLOBAL (LENDO DE ITENS_OS)
+// DASHBOARD CORRIGIDO - CONTABILIZANDO DA TABELA DE VENDAS_BALCAO
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
@@ -135,7 +135,7 @@ async function carregarDadosDashboard() {
     } catch(e) {}
 
     try {
-        const { data: vendas } = await supabaseClient.from('itens_os').select('preco_unitario, quantidade, created_at');
+        const { data: vendas } = await supabaseClient.from('vendas_balcao').select('total_venda, created_at');
         
         let totalGeral = 0, totalMes = 0, totalHoje = 0;
         
@@ -146,18 +146,15 @@ async function carregarDadosDashboard() {
 
         if (vendas) {
             vendas.forEach(v => {
-                const precoUnit = parseFloat(v.preco_unitario) || 0;
-                const qtd = parseInt(v.quantidade) || 1;
-                const valorTotalItem = precoUnit * qtd;
-                
-                totalGeral += valorTotalItem;
+                const valorTotalVenda = parseFloat(v.total_venda) || 0;
+                totalGeral += valorTotalVenda;
                 
                 const dataVenda = new Date(v.created_at);
                 if (!isNaN(dataVenda.getTime())) {
                     if (dataVenda.getFullYear() === hojeAno && dataVenda.getMonth() === hojeMes) {
-                        totalMes += valorTotalItem;
+                        totalMes += valorTotalVenda;
                         if (dataVenda.getDate() === hojeDia) {
-                            totalHoje += valorTotalItem;
+                            totalHoje += valorTotalVenda;
                         }
                     }
                 }
@@ -255,7 +252,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO (SALVANDO EM ITENS_OS)
+// SEÇÃO DE VENDAS DE BALCÃO (UTILIZANDO VENDAS_BALCAO)
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -305,13 +302,15 @@ async function executarVendaBalcao() {
         return; 
     }
 
-    const precoFinalCalculado = precoUn + (valorMaoDeObra / qtd);
+    const totalVendaCalculada = (precoUn * qtd) + valorMaoDeObra;
 
     try {
-        const { error } = await supabaseClient.from('itens_os').insert([{
+        const { error } = await supabaseClient.from('vendas_balcao').insert([{
+            cliente_id: clienteId,
             produto_id: produtoId,
             quantidade: qtd,
-            preco_unitario: precoFinalCalculado
+            valor_servico: valorMaoDeObra,
+            total_venda: totalVendaCalculada
         }]);
         
         if (error) throw error;
@@ -321,7 +320,6 @@ async function executarVendaBalcao() {
         document.getElementById('vd-produto').value = "";
         document.getElementById('vd-qtd').value = "1";
         document.getElementById('vd-valor-servico').value = "0.00";
-        if(document.getElementById('vd-descricao-servico')) document.getElementById('vd-descricao-servico').value = "";
         
         await listarVendas(); 
         await listarProdutos(); 
@@ -331,15 +329,15 @@ async function executarVendaBalcao() {
         alert("Venda de balcão realizada e contabilizada com sucesso!");
     } catch (e) { 
         console.error("Erro na venda:", e);
-        alert("Erro ao salvar o item de venda. Verifique o console."); 
+        alert("Erro ao salvar a venda de balcão."); 
     }
 }
 
 async function listarVendas() {
     try {
         const { data: vendas, error } = await supabaseClient
-            .from('itens_os')
-            .select(`id, created_at, quantidade, preco_unitario, produtos(nome)`)
+            .from('vendas_balcao')
+            .select(`id, created_at, quantidade, valor_servico, total_venda, clientes(nome, telefone), produtos(nome, preco)`)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -351,34 +349,97 @@ async function listarVendas() {
         if (vendas && vendas.length > 0) {
             vendas.forEach(v => {
                 const dataFmt = new Date(v.created_at).toLocaleString('pt-BR');
-                const totalItem = (parseFloat(v.preco_unitario) || 0) * (parseInt(v.quantidade) || 1);
-                const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item de Serviço / Venda';
+                const totalItem = parseFloat(v.total_venda) || 0;
+                const clienteNome = v.clientes ? v.clientes.nome : 'Cliente Balcão';
+                const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Geral';
                 
+                const dadosRecibo = JSON.stringify({
+                    id: v.id,
+                    data: dataFmt,
+                    cliente: clienteNome,
+                    telefone: v.clientes?.telefone || '',
+                    item: v.produtos?.nome || '',
+                    qtd: v.quantidade,
+                    valor_item: v.produtos?.preco || 0,
+                    mao_obra: v.valor_servico,
+                    total: totalItem
+                }).replace(/"/g, '&quot;');
+
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="p-3 md:p-4 font-mono text-gray-600">${dataFmt}</td>
-                        <td class="p-3 md:p-4 font-semibold text-gray-900">Venda Direta (Balcão)</td>
+                        <td class="p-3 md:p-4 font-semibold text-gray-900">${clienteNome}</td>
                         <td class="p-3 md:p-4 text-xs text-gray-700">${pecaTexto}</td>
                         <td class="p-3 md:p-4 font-bold text-emerald-600 font-mono">R$ ${totalItem.toFixed(2).replace('.', ',')}</td>
-                        <td class="p-3 md:p-4 text-center"><button onclick="deletarVenda('${v.id}')" class="text-red-500 hover:text-red-800 cursor-pointer text-xs font-medium">Estornar</button></td>
+                        <td class="p-3 md:p-4 text-center space-x-2">
+                            <button onclick="imprimirReciboVenda(${dadosRecibo})" class="text-blue-600 hover:text-blue-800 text-xs font-bold cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-200">🖨️ Recibo</button>
+                            <button onclick="deletarItem('vendas_balcao', '${v.id}', listarVendas)" class="text-red-500 hover:text-red-800 cursor-pointer text-xs font-medium">Estornar</button>
+                        </td>
                     </tr>`;
             });
         } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhuma venda listada no histórico.</td></tr>`;
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhuma venda listada no histórico do caixa.</td></tr>`;
         }
     } catch (e) {
         console.error("Erro ao listar vendas:", e);
     }
 }
 
-async function deletarVenda(id) {
-    if (!confirm("Deseja estornar essa venda?")) return;
-    await supabaseClient.from('itens_os').delete().eq('id', id);
-    listarVendas(); carregarDadosDashboard();
+function imprimirReciboVenda(v) {
+    const janelaImpressao = window.open('', '', 'width=600,height=700');
+    janelaImpressao.document.write(`
+        <html>
+        <head>
+            <title>Recibo MSP Tecnologia</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; font-size: 14px; padding: 20px; color: #000; }
+                .text-center { text-align: center; }
+                .bold { font-weight: bold; }
+                .linha { border-bottom: 1px dashed #000; margin: 10px 0; }
+                .flex { display: flex; justify-content: space-between; }
+                @media print { body { padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="text-center bold" style="font-size: 16px;">MSP TECNOLOGIA</div>
+            <div class="text-center">Irecê - Bahia</div>
+            <div class="linha"></div>
+            <div><b>CUPOM Nº:</b> BAL-${v.id}</div>
+            <div><b>DATA/HORA:</b> ${v.data}</div>
+            <div class="linha"></div>
+            <div><b>CLIENTE:</b> ${v.cliente}</div>
+            ${v.telefone ? `<div><b>WHATSAPP:</b> ${v.telefone}</div>` : ''}
+            <div class="linha"></div>
+            <div class="bold">DETALHAMENTO:</div>
+            <div class="flex">
+                <span>${v.qtd}x ${v.item}</span>
+                <span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span>
+            </div>
+            ${parseFloat(v.mao_obra) > 0 ? `
+            <div class="flex">
+                <span>🔧 Mão de Obra / Serviço</span>
+                <span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span>
+            </div>` : ''}
+            <div class="linha"></div>
+            <div class="flex bold" style="font-size: 16px;">
+                <span>TOTAL LÍQUIDO:</span>
+                <span>R$ ${parseFloat(v.total).toFixed(2)}</span>
+            </div>
+            <div class="linha"></div>
+            <br><br>
+            <div class="text-center">Assinatura Responsável</div>
+            <div class="text-center">__________________________________</div>
+            <br><br>
+            <div class="text-center bold">Obrigado pela preferência!</div>
+            <script>window.print(); window.close();</script>
+        </body>
+        </html>
+    `);
+    janelaImpressao.document.close();
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (CAMPOS DO BANCO CORRIGIDOS)
+// SEÇÃO DE ORDENS DE SERVIÇO (ORDENS_SERVICO)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -404,7 +465,7 @@ async function finalizarOperacao() {
         alert("Ordem de serviço aberta com sucesso!");
     } catch(e){ 
         console.error(e);
-        alert("Erro ao registrar OS. Verifique os campos no banco."); 
+        alert("Erro ao registrar OS."); 
     }
 }
 
@@ -449,7 +510,7 @@ async function gerarRelatorioFiltrado() {
     corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center font-medium text-blue-600 animate-pulse">🔎 Processando fechamento de período...</td></tr>`;
 
     try {
-        const { data: vendas, error } = await supabaseClient.from('itens_os').select(`id, created_at, quantidade, preco_unitario, produtos(nome, preco)`).order('created_at', { ascending: true });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, produtos(nome, preco)`).order('created_at', { ascending: true });
 
         if (error) throw error;
 
@@ -464,8 +525,8 @@ async function gerarRelatorioFiltrado() {
                 const dataVenda = new Date(v.created_at);
                 
                 if (dataVenda >= limiteInicio && dataVenda <= limiteFim) {
-                    const totalLiquido = (parseFloat(v.preco_unitario) || 0) * (parseInt(v.quantidade) || 1);
-                    const precoOriginalPeca = v.produtos ? (parseFloat(v.produtos.preco) || 0) * (parseInt(v.quantidade) || 1) : totalLiquido;
+                    const totalLiquido = parseFloat(v.total_venda) || 0;
+                    const precoOriginalPeca = v.produtos ? (parseFloat(v.produtos.preco) || 0) * (parseInt(v.quantidade) || 1) : totalLiquido - (parseFloat(v.valor_servico) || 0);
 
                     somaPecas += precoOriginalPeca;
                     somaGeral += totalLiquido;
