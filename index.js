@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         formLogin.addEventListener("submit", executarLogin);
     }
 
-    // 2. Checar se o usuário já tem uma sessão ativa salva no navegador
+    // 2. Checar se o usuário já tem uma sessão activa salva no navegador
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error || !session) {
@@ -26,8 +26,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// FUNÇÃO PARA EXECUTAR O LOGIN COM E-MAIL E SENHA
-async function ejecutarLogin(e) {
+// FUNÇÃO PARA EXECUTAR O LOGIN COM E-MAIL E SENHA (CORRIGIDA)
+async function executarLogin(e) {
     e.preventDefault();
     
     const email = document.getElementById("login-email").value.trim();
@@ -334,7 +334,7 @@ async function carregarSeletores() {
     }
 }
 
-async function executarVendaBalcao() {
+async function ejecutarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value || null;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
