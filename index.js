@@ -212,7 +212,7 @@ async function listarProdutos() {
             lista.forEach(p => {
                 if (p.nome.toLowerCase().includes(busca)) {
                     const estoqueAlerta = p.estoque <= 2 ? 'text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100' : 'text-gray-600';
-                    corpo.innerHTML += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 md:p-4 font-medium text-gray-900">${p.nome}</td><td class="p-3 md:p-4 font-mono text-gray-700">R$ ${p.preco.toFixed(2).replace('.', ',')}</td><td class="p-3 md:p-4"><span class="${estoqueAlerta}">${p.estoque} un</span></td><td class="p-3 md:p-4 text-center space-x-2"><button onclick="abrirModalEditar('${p.id}', '${p.nome}', ${p.preco}, ${p.estoque})" class="text-blue-600 hover:text-blue-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-blue-50">Editar</button><button onclick="deletarItem('produtos', '${p.id}', listarProdutos)" class="text-red-600 hover:text-red-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td></tr>`;
+                    corpo.innerHTML += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 md:p-4 font-medium text-gray-900">${p.nome}</td><td class="p-3 md:p-4 font-mono text-gray-700">R$ ${p.preco.toFixed(2).replace('.', ',')}</td><td class="p-3 md:p-4"><span class="${estoqueAlerta}">${p.estoque} un</span></td><td class="p-3 md:p-4 text-center space-x-2"><button onclick="abrirModalEditar('${p.id}', '${p.nome}', ${p.preco}, ${p.estoque})" class="text-blue-600 hover:text-blue-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-blue-50">Editar</button><button onclick="deletarItem('produtos', '${p.id}', listarProdutos)" class="text-red-600 hover:text-red-700 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td></tr>`;
                 }
             });
         }
@@ -238,7 +238,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO (CORRIGIDA)
+// SEÇÃO DE VENDAS DE BALCÃO (TRAVAMENTO CORRIGIDO)
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -272,7 +272,7 @@ async function executarVendaBalcao() {
     const produtoId = document.getElementById('vd-produto').value;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
     const valorMaoDeObra = parseFloat(document.getElementById('vd-valor-servico').value) || 0;
-    const descricaoServico = document.getElementById('vd-descricao-servico').value;
+    const txtServico = document.getElementById('vd-descricao-servico').value;
 
     if (!clienteId || !produtoId) { alert("Escolha o cliente e o item!"); return; }
 
@@ -285,21 +285,25 @@ async function executarVendaBalcao() {
     const totalVendaCalculada = (precoUn * qtd) + valorMaoDeObra;
 
     try {
+        // Correção do payload de data para bater exatamente com a coluna de texto aceita pelo banco
         const { error } = await supabaseClient.from('vendas_balcao').insert([{
             cliente_id: clienteId, 
             produto_id: produtoId, 
             quantidade: qtd, 
             valor_servico: valorMaoDeObra, 
             total_venda: totalVendaCalculada,
-            descricao_servico: descricaoServico || "Venda Direta"
+            descricao_servico: txtServico || "Venda Direta"
         }]);
+        
         if (error) throw error;
+        
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
         document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00"; document.getElementById('vd-descricao-servico').value = "";
         listarVendas(); listarProdutos(); carregarDadosDashboard(); carregarSeletores();
         alert("Venda realizada com sucesso!");
     } catch (e) {
         console.error(e);
+        alert("Erro no formato enviado ao Supabase.");
     }
 }
 
@@ -322,8 +326,8 @@ async function listarVendas() {
                 const cli = clientesLista ? clientesLista.find(c => String(c.id) === String(v.cliente_id)) : null;
                 const prod = produtosLista ? produtosLista.find(p => String(p.id) === String(v.produto_id)) : null;
 
-                const clienteNome = cli ? cli.nome : 'Cliente ID: ' + v.cliente_id;
-                const pecaTexto = prod ? `📦 ${prod.nome} (x${v.quantidade})` : 'Item ID: ' + v.produto_id;
+                const clienteNome = cli ? cli.nome : 'Cliente Código: ' + v.cliente_id;
+                const pecaTexto = prod ? `📦 ${prod.nome} (x${v.quantidade})` : 'Item Código: ' + v.produto_id;
                 const servicoTexto = v.descricao_servico ? `<br><span class="text-slate-500 text-xs">🔧 ${v.descricao_servico}</span>` : '';
                 
                 const dadosRecibo = JSON.stringify({
@@ -342,8 +346,6 @@ async function listarVendas() {
                         </td>
                     </tr>`;
             });
-        } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Nenhuma venda listada no histórico do caixa.</td></tr>`;
         }
     } catch (e) {
         console.error(e);
@@ -357,7 +359,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (DESIGN RESTAURADO)
+// SEÇÃO DE ORDENS DE SERVIÇO (CONTRATO RESTAURADO)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -383,7 +385,7 @@ async function listarOrdens() {
         const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('id', { ascending: false });
         if (erroOS) throw erroOS;
 
-        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj');
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telephone:telefone, cpf_cnpj');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return; 
@@ -405,13 +407,12 @@ async function listarOrdens() {
                 const dadosOSPrint = JSON.stringify({
                     id: o.id, data: dataFmt,
                     cliente: clienteEncontrado ? clienteEncontrado.nome : 'Cliente Código: ' + o.cliente_id,
-                    telefone: clienteEncontrado ? clienteEncontrado.telefone : 'Não informado',
+                    telefone: clienteEncontrado ? clienteEncontrado.telephone : 'Não informado',
                     cpf: clienteEncontrado ? (clienteEncontrado.cpf_cnpj || 'Não informado') : 'Não informado',
                     local: metaLocal ? `${metaLocal.endereco} - ${metaLocal.cidade}` : 'Não informado',
                     equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
-                // RENDERIZANDO A LINHA COM DESIGN PREMIUM E SCANNÁVEL
                 corpo.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-gray-200">
                         <td class="p-3 md:p-4 font-mono font-bold text-gray-600 text-xs">OS-${o.id}</td>
@@ -431,8 +432,6 @@ async function listarOrdens() {
                         </td>
                     </tr>`;
             });
-        } else {
-            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
     } catch(e) {}
 }
@@ -442,7 +441,6 @@ async function atualizarStatusOS(id, novoStatus) {
     listarOrdens(); carregarDadosDashboard();
 }
 
-// CONTRATO LEGAL COMPLETO COM CLÁUSULA DE ABANDONO DE 90 DIAS NA VIA A4
 function imprimirLaudoOS(os) {
     const windowLaudo = window.open('', '', 'width=850,height=900');
     windowLaudo.document.write(`
@@ -452,10 +450,10 @@ function imprimirLaudoOS(os) {
             .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; } 
             .titulo { font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; } 
             .secao { background: #f8fafc; padding: 12px 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; } 
-            .secao-titulo { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; tracking-wider: 0.5px; } 
+            .secao-titulo { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px; } 
             .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 6px; } 
             .campo-texto { min-height: 60px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; font-size: 13px; } 
-            .contrato { font-size: 10px; color: #475569; text-align: justify; margin-top: 15px; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; background: #fff; }
+            .contrato { font-size: 11px; color: #334155; text-align: justify; margin-top: 15px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; background: #fff; line-height: 1.6; }
             .assinaturas { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; } 
             .linha-assinatura { border-top: 1px solid #333; width: 260px; margin-bottom: 5px; }
             @media print { body { padding: 0; } .secao { background: none; } .contrato { background: none; } }
@@ -482,7 +480,7 @@ function imprimirLaudoOS(os) {
 }
 
 // ==========================================
-// RELATÓRIOS FILTRADOS
+// RELATÓRIOS FILTRADOS (CORREÇÃO DE CHAMADO)
 // ==========================================
 async function gerarRelatorioFiltrado() {
     const dataInicioStr = document.getElementById('rep-data-inicio').value;
