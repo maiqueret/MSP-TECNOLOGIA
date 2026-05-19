@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO INICIAL DO SUPABASE (NOME ALTERADO PARA EVITAR CONFLITO GLOBAL)
+// CONFIGURAÇÃO INICIAL DO SUPABASE
 const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
 let usuarioLogado = null;
@@ -252,7 +252,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO (UTILIZANDO VENDAS_BALCAO)
+// SEÇÃO DE VENDAS DE BALCÃO
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -439,7 +439,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (ORDENS_SERVICO)
+// SEÇÃO DE ORDENS DE SERVIÇO (COM LAUDO A4)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -471,7 +471,7 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        const { data: ordens } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome)`).order('created_at', { ascending: false });
+        const { data: ordens } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone)`).order('created_at', { ascending: false });
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return;
         corpo.innerHTML = "";
@@ -483,7 +483,35 @@ async function listarOrdens() {
                 if (o.status === "Aguardando Peça") badgeColor = "bg-purple-100 text-purple-800";
                 if (o.status === "Concluido") badgeColor = "bg-green-100 text-green-800";
 
-                corpo.innerHTML += `<tr class="hover:bg-gray-50 border-b border-gray-100"><td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).substring(0,4).toUpperCase()}<br><span class="text-[10px]">${dataFmt}</span></td><td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td><td class="p-3 md:p-4"><select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer"><option value="Em Análise" ${o.status === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option><option value="Em Andamento" ${o.status === 'Em Andamento' ? 'selected' : ''}>🛠️ Na Bancada</option><option value="Aguardando Peça" ${o.status === 'Aguardando Peça' ? 'selected' : ''}>📦 Sem Peça</option><option value="Concluido" ${o.status === 'Concluido' ? 'selected' : ''}>✅ Concluído</option></select></td><td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td><td class="p-3 md:p-4 text-center"><button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-800 cursor-pointer">Remover</button></td></tr>`;
+                // Objeto contendo os dados da OS formatados para injeção no HTML de impressão
+                const dadosOSPrint = JSON.stringify({
+                    id: o.id,
+                    data: dataFmt,
+                    cliente: o.clientes?.nome || 'Não informado',
+                    telefone: o.clientes?.telefone || 'Não informado',
+                    equipamento: o.descricao_equipamento,
+                    defeito: o.defeito_relatado,
+                    status: o.status
+                }).replace(/"/g, '&quot;');
+
+                corpo.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).substring(0,4).toUpperCase()}<br><span class="text-[10px]">${dataFmt}</span></td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
+                        <td class="p-3 md:p-4">
+                            <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
+                                <option value="Em Análise" ${o.status === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
+                                <option value="Em Andamento" ${o.status === 'Em Andamento' ? 'selected' : ''}>🛠️ Na Bancada</option>
+                                <option value="Aguardando Peça" ${o.status === 'Aguardando Peça' ? 'selected' : ''}>📦 Sem Peça</option>
+                                <option value="Concluido" ${o.status === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
+                            </select>
+                        </td>
+                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
+                        <td class="p-3 md:p-4 text-center space-x-1 whitespace-nowrap">
+                            <button onclick="imprimirLaudoOS(${dadosOSPrint})" class="text-blue-600 hover:text-blue-900 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 cursor-pointer">🖨️ Via A4</button>
+                            <button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-800 cursor-pointer text-xs">Remover</button>
+                        </td>
+                    </tr>`;
             });
         }
     } catch(e){}
@@ -492,6 +520,94 @@ async function listarOrdens() {
 async function atualizarStatusOS(id, novoStatus) {
     await supabaseClient.from('ordens_servico').update({ status: novoStatus }).eq('id', id);
     listarOrdens(); carregarDadosDashboard();
+}
+
+// FUNÇÃO PARA GERAR A IMPRESSÃO DE ORDEM DE SERVIÇO EM TAMANHO A4
+function imprimirLaudoOS(os) {
+    const janelaLaudo = window.open('', '', 'width=800,height=900');
+    janelaLaudo.document.write(`
+        <html>
+        <head>
+            <title>Ordem de Serviço - MSP Tecnologia</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                .topo { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; }
+                .titulo { font-size: 24px; font-weight: bold; color: #1e293b; }
+                .info-empresa { text-align: right; font-size: 12px; color: #64748b; }
+                .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+                .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; tracking-wider }
+                .grid { display: grid; grid-cols: 2; display: flex; justify-content: space-between; flex-wrap: wrap; }
+                .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; }
+                .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; }
+                .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; }
+                .linha-assinatura { border-top: 1px solid #333; width: 250px; margin-bottom: 5px; }
+                @media print { body { padding: 0; } .secao { background: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="topo">
+                <div>
+                    <div class="titulo">MSP TECNOLOGIA</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #2563eb; margin-top: 2px;">COMPROVANTE DE ORDEM DE SERVIÇO</div>
+                </div>
+                <div class="info-empresa">
+                    <b>MSP Tecnologia & Assistência Técnica</b><br>
+                    Irecê - Bahia<br>
+                    Contato: (74) 99995-0922
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">1. Identificação do Chamado Técnico</div>
+                <div class="grid">
+                    <div><b>Controle OS:</b> OS-${String(os.id).toUpperCase()}</div>
+                    <div><b>Data de Entrada:</b> ${os.data}</div>
+                    <div><b>Situação Atual:</b> 🟢 ${os.status}</div>
+                    <div><b>Técnico Responsável:</b> Maique Pereira</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">2. Informações do Cliente</div>
+                <div class="grid">
+                    <div><b>Nome/Razão Social:</b> ${os.cliente}</div>
+                    <div><b>Contato Telefônico:</b> ${os.telefone}</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">3. Dados do Equipamento</div>
+                <div class="grid">
+                    <div style="width: 100%"><b>Aparelho / Modelo / Componente:</b> ${os.equipamento}</div>
+                </div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">4. Defeito Constatado / Descrição do Problema</div>
+                <div class="campo-texto">${os.defeito}</div>
+            </div>
+
+            <div class="secao">
+                <div class="secao-titulo">5. Parecer Técnico / Peças Aplicadas (Uso Exclusivo da Oficina)</div>
+                <div class="campo-texto" style="min-height: 120px; color: #94a3b8; font-style: italic;">Campos em branco para preenchimento manual de laudo técnico de bancada...</div>
+            </div>
+
+            <div class="assinaturas">
+                <div>
+                    <div class="linha-assinatura"></div>
+                    MSP Tecnologia
+                </div>
+                <div>
+                    <div class="linha-assinatura"></div>
+                    Autorização de Saída (Cliente)
+                </div>
+            </div>
+
+            <script>window.print(); window.close();</script>
+        </body>
+        </html>
+    `);
+    janelaLaudo.document.close();
 }
 
 // ==========================================
