@@ -139,7 +139,7 @@ async function carregarDadosDashboard() {
 }
 
 // ==========================================
-// SEÇÃO DE CLIENTES (MANTIDOS TODOS OS CAMPOS)
+// SEÇÃO DE CLIENTES
 // ==========================================
 if (document.getElementById('form-cliente')) {
     document.getElementById('form-cliente').addEventListener('submit', async (e) => {
@@ -231,7 +231,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO (COM DESCRIÇÃO)
+// SEÇÃO DE VENDAS DE BALCÃO
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -284,20 +284,26 @@ async function executarVendaBalcao() {
             quantidade: qtd, 
             valor_servico: valorMaoDeObra, 
             total_venda: totalVendaCalculada,
-            descricao_servico: descricaoServico // SALVANDO A DESCRIÇÃO NO BANCO
+            descricao_servico: descricaoServico
         }]);
         if (error) throw error;
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
         document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00"; document.getElementById('vd-descricao-servico').value = "";
         listarVendas(); listarProdutos(); carregarDadosDashboard(); carregarSeletores();
         alert("Venda realizada com sucesso!");
-    } catch (e) {}
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 async function listarVendas() {
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, descricao_servico, clientes(nome, telefone), produtos(nome, preco)`).order('created_at', { ascending: false });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select('*').order('created_at', { ascending: false });
         if (error) throw error;
+
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone');
+        const { data: produtosLista } = await supabaseClient.from('produtos').select('id, nome, preco');
+
         const corpo = document.getElementById('tabela-vendas-corpo');
         if (!corpo) return; corpo.innerHTML = "";
 
@@ -305,12 +311,16 @@ async function listarVendas() {
             vendas.forEach(v => {
                 const dataFmt = new Date(v.created_at).toLocaleString('pt-BR');
                 const totalItem = parseFloat(v.total_venda) || 0;
-                const clienteNome = v.clientes ? v.clientes.nome : 'Cliente Balcão';
-                const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Geral';
+                
+                const cli = clientesLista ? clientesLista.find(c => String(c.id) === String(v.cliente_id)) : null;
+                const prod = produtosLista ? produtosLista.find(p => String(p.id) === String(v.produto_id)) : null;
+
+                const clienteNome = cli ? cli.nome : 'Cliente Código: ' + v.cliente_id;
+                const pecaTexto = prod ? `📦 ${prod.nome} (x${v.quantidade})` : 'Item Código: ' + v.produto_id;
                 const servicoTexto = v.descricao_servico ? `<br><span class="text-slate-500">🔧 ${v.descricao_servico}</span>` : '';
                 
                 const dadosRecibo = JSON.stringify({
-                    id: v.id, data: dataFmt, cliente: clienteNome, telefone: v.clientes?.telefone || '', item: v.produtos?.nome || '', qtd: v.quantidade, valor_item: v.produtos?.preco || 0, mao_obra: v.valor_servico, total: totalItem, servico: v.descricao_servico || ''
+                    id: v.id, data: dataFmt, cliente: cli ? cli.nome : 'Cliente', telefone: cli ? cli.telefone : '', item: prod ? prod.nome : 'Item', qtd: v.quantidade, valor_item: prod ? prod.preco : 0, mao_obra: v.valor_servico, total: totalItem, servico: v.descricao_servico || ''
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
@@ -325,18 +335,22 @@ async function listarVendas() {
                         </td>
                     </tr>`;
             });
+        } else {
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Nenhuma venda listada no histórico do caixa.</td></tr>`;
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 function imprimirReciboVenda(v) {
     const janelaImpressao = window.open('', '', 'width=600,height=700');
-    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${v.servico ? `<p>🔧 <b>Serviço:</b> ${v.servico}</p>` : ''}${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
+    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${v.servico ? `<div>🔧 <b>Serviço:</b> ${v.servico}</div>` : ''}${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
     janelaImpressao.document.close();
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO - RESILIENTE CONTRA QUEBRAS
+// SEÇÃO DE ORDENS DE SERVIÇO
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -359,12 +373,10 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        // 1. Puxa as ordens de serviço puras primeiro para garantir que NADA bloqueie o carregamento
         const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('created_at', { ascending: false });
         if (erroOS) throw erroOS;
 
-        // 2. Puxa a lista de clientes para fazer o cruzamento direto na memória, evitando falhas de Foreign Key
-        const { data: clientesLista } = await supabaseClient.from('clientes').select('*');
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj, endereco, city:cidade');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return; 
@@ -380,22 +392,21 @@ async function listarOrdens() {
                 else if (statusFmt.includes("peca") || statusFmt.includes("sem")) { valorSelect = "Aguardando Peça"; badgeColor = "bg-purple-100 text-purple-800"; }
                 else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800"; }
 
-                // Localiza o cliente correspondente na lista de memória de forma segura
                 const clienteEncontrado = clientesLista ? clientesLista.find(c => String(c.id) === String(o.cliente_id)) : null;
 
                 const dadosOSPrint = JSON.stringify({
                     id: o.id, data: dataFmt,
-                    cliente: clienteEncontrado ? clienteEncontrado.nome : 'Cliente Avulso',
+                    cliente: clienteEncontrado ? clienteEncontrado.nome : 'Cliente Código: ' + o.cliente_id,
                     telefone: clienteEncontrado ? clienteEncontrado.telefone : 'Não informado',
                     cpf: clienteEncontrado ? (clienteEncontrado.cpf_cnpj || 'Não informado') : 'Não informado',
-                    local: clienteEncontrado ? `${clienteEncontrado.endereco || ''} - ${clienteEncontrado.cidade || ''}` : 'Não informado',
+                    local: clienteEncontrado ? `${clienteEncontrado.endereco || ''} - ${clienteEncontrado.city || ''}` : 'Não informado',
                     equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="p-3 md:p-4 font-mono text-gray-500">OS-${o.id}</td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">${clienteEncontrado ? clienteEncontrado.nome : 'Código Cliente: ' + o.cliente_id}</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">${clienteEncontrado ? clienteEncontrado.nome : 'Cliente ID: ' + o.cliente_id}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
