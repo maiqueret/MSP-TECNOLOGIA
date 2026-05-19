@@ -139,7 +139,7 @@ async function carregarDadosDashboard() {
 }
 
 // ==========================================
-// SEÇÃO DE CLIENTES ADAPTADA (NOVOS CAMPOS)
+// SEÇÃO DE CLIENTES (MANTIDOS TODOS OS CAMPOS)
 // ==========================================
 if (document.getElementById('form-cliente')) {
     document.getElementById('form-cliente').addEventListener('submit', async (e) => {
@@ -231,7 +231,7 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO
+// SEÇÃO DE VENDAS DE BALCÃO (COM DESCRIÇÃO)
 // ==========================================
 async function carregarSeletores() {
     try {
@@ -265,6 +265,7 @@ async function executarVendaBalcao() {
     const produtoId = document.getElementById('vd-produto').value;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
     const valorMaoDeObra = parseFloat(document.getElementById('vd-valor-servico').value) || 0;
+    const descricaoServico = document.getElementById('vd-descricao-servico').value;
 
     if (!clienteId || !produtoId) { alert("Escolha o cliente e o item!"); return; }
 
@@ -278,11 +279,16 @@ async function executarVendaBalcao() {
 
     try {
         const { error } = await supabaseClient.from('vendas_balcao').insert([{
-            cliente_id: clienteId, produto_id: produtoId, quantidade: qtd, valor_servico: valorMaoDeObra, total_venda: totalVendaCalculada
+            cliente_id: clienteId, 
+            produto_id: produtoId, 
+            quantidade: qtd, 
+            valor_servico: valorMaoDeObra, 
+            total_venda: totalVendaCalculada,
+            descricao_servico: descricaoServico // SALVANDO A DESCRIÇÃO NO BANCO
         }]);
         if (error) throw error;
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
-        document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00";
+        document.getElementById('vd-produto').value = ""; document.getElementById('vd-qtd').value = "1"; document.getElementById('vd-valor-servico').value = "0.00"; document.getElementById('vd-descricao-servico').value = "";
         listarVendas(); listarProdutos(); carregarDadosDashboard(); carregarSeletores();
         alert("Venda realizada com sucesso!");
     } catch (e) {}
@@ -290,7 +296,7 @@ async function executarVendaBalcao() {
 
 async function listarVendas() {
     try {
-        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, clientes(nome, telefone), produtos(nome, preco)`).order('created_at', { ascending: false });
+        const { data: vendas, error } = await supabaseClient.from('vendas_balcao').select(`id, created_at, quantidade, valor_servico, total_venda, descricao_servico, clientes(nome, telefone), produtos(nome, preco)`).order('created_at', { ascending: false });
         if (error) throw error;
         const corpo = document.getElementById('tabela-vendas-corpo');
         if (!corpo) return; corpo.innerHTML = "";
@@ -301,16 +307,17 @@ async function listarVendas() {
                 const totalItem = parseFloat(v.total_venda) || 0;
                 const clienteNome = v.clientes ? v.clientes.nome : 'Cliente Balcão';
                 const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Geral';
+                const servicoTexto = v.descricao_servico ? `<br><span class="text-slate-500">🔧 ${v.descricao_servico}</span>` : '';
                 
                 const dadosRecibo = JSON.stringify({
-                    id: v.id, data: dataFmt, cliente: clienteNome, telefone: v.clientes?.telefone || '', item: v.produtos?.nome || '', qtd: v.quantidade, valor_item: v.produtos?.preco || 0, mao_obra: v.valor_servico, total: totalItem
+                    id: v.id, data: dataFmt, cliente: clienteNome, telefone: v.clientes?.telefone || '', item: v.produtos?.nome || '', qtd: v.quantidade, valor_item: v.produtos?.preco || 0, mao_obra: v.valor_servico, total: totalItem, servico: v.descricao_servico || ''
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="p-3 md:p-4 font-mono text-gray-600">${dataFmt}</td>
                         <td class="p-3 md:p-4 font-semibold text-gray-900">${clienteNome}</td>
-                        <td class="p-3 md:p-4 text-xs text-gray-700">${pecaTexto}</td>
+                        <td class="p-3 md:p-4 text-xs text-gray-700">${pecaTexto} ${servicoTexto}</td>
                         <td class="p-3 md:p-4 font-bold text-emerald-600 font-mono">R$ ${totalItem.toFixed(2).replace('.', ',')}</td>
                         <td class="p-3 md:p-4 text-center space-x-2">
                             <button onclick="imprimirReciboVenda(${dadosRecibo})" class="text-blue-600 hover:text-blue-800 text-xs font-bold cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-200">🖨️ Recibo</button>
@@ -324,12 +331,12 @@ async function listarVendas() {
 
 function imprimirReciboVenda(v) {
     const janelaImpressao = window.open('', '', 'width=600,height=700');
-    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
+    janelaImpressao.document.write(`<html><head><title>Recibo</title><style>body { font-family: monospace; padding: 20px; } .flex { display: flex; justify-content: space-between; }</style></head><body><h3 style="text-align:center">MSP TECNOLOGIA</h3><p><b>Cupom:</b> BAL-${v.id}</p><p><b>Data:</b> ${v.data}</p><p><b>Cliente:</b> ${v.cliente}</p><hr><div class="flex"><span>${v.qtd}x ${v.item}</span><span>R$ ${(v.valor_item * v.qtd).toFixed(2)}</span></div>${v.servico ? `<p>🔧 <b>Serviço:</b> ${v.servico}</p>` : ''}${parseFloat(v.mao_obra) > 0 ? `<div class="flex"><span>🔧 Mão de Obra</span><span>R$ ${parseFloat(v.mao_obra).toFixed(2)}</span></div>` : ''}<hr><div class="flex"><b>TOTAL:</b><b>R$ ${parseFloat(v.total).toFixed(2)}</b></div><script>window.print(); window.close();</script></body></html>`);
     janelaImpressao.document.close();
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO - COMPLETA E INTEGRADA
+// SEÇÃO DE ORDENS DE SERVIÇO - RESILIENTE CONTRA QUEBRAS
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -352,9 +359,12 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        // Puxa as ordens cruzando de forma inteligente com os novos campos de endereço dos clientes
-        const { data: ordens, error } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone, cpf_cnpj, endereco, cidade)`).order('created_at', { ascending: false });
-        if (error) throw error;
+        // 1. Puxa as ordens de serviço puras primeiro para garantir que NADA bloqueie o carregamento
+        const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('created_at', { ascending: false });
+        if (erroOS) throw erroOS;
+
+        // 2. Puxa a lista de clientes para fazer o cruzamento direto na memória, evitando falhas de Foreign Key
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('*');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return; 
@@ -370,19 +380,22 @@ async function listarOrdens() {
                 else if (statusFmt.includes("peca") || statusFmt.includes("sem")) { valorSelect = "Aguardando Peça"; badgeColor = "bg-purple-100 text-purple-800"; }
                 else if (statusFmt.includes("concluid") || statusFmt.includes("pronto")) { valorSelect = "Concluido"; badgeColor = "bg-green-100 text-green-800"; }
 
+                // Localiza o cliente correspondente na lista de memória de forma segura
+                const clienteEncontrado = clientesLista ? clientesLista.find(c => String(c.id) === String(o.cliente_id)) : null;
+
                 const dadosOSPrint = JSON.stringify({
                     id: o.id, data: dataFmt,
-                    cliente: o.clientes?.nome || 'Não informado',
-                    telefone: o.clientes?.telefone || 'Não informado',
-                    cpf: o.clientes?.cpf_cnpj || 'Não informado',
-                    local: `${o.clientes?.endereco || ''} - ${o.clientes?.cidade || ''}`,
+                    cliente: clienteEncontrado ? clienteEncontrado.nome : 'Cliente Avulso',
+                    telefone: clienteEncontrado ? clienteEncontrado.telefone : 'Não informado',
+                    cpf: clienteEncontrado ? (clienteEncontrado.cpf_cnpj || 'Não informado') : 'Não informado',
+                    local: clienteEncontrado ? `${clienteEncontrado.endereco || ''} - ${clienteEncontrado.cidade || ''}` : 'Não informado',
                     equipamento: o.descricao_equipamento, defeito: o.defeito_relatado, status: o.status || 'Em Análise'
                 }).replace(/"/g, '&quot;');
 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="p-3 md:p-4 font-mono text-gray-500">OS-${o.id}</td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">${clienteEncontrado ? clienteEncontrado.nome : 'Código Cliente: ' + o.cliente_id}</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
@@ -401,7 +414,9 @@ async function listarOrdens() {
         } else {
             corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error("Erro fatal ao listar ordens:", e);
+    }
 }
 
 async function atualizarStatusOS(id, novoStatus) {
@@ -414,7 +429,7 @@ function imprimirLaudoOS(os) {
     windowLaudo.document.write(`
         <html><head><title>Ordem de Serviço</title><style>body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; } .topo { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px; } .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; } .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; } .grid { display: flex; justify-content: space-between; flex-wrap: wrap; } .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; } .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; } .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; } .linha-assinatura { border-top: 1px solid #333; width: 250px; margin-bottom: 5px; }</style></head><body>
             <div class="topo"><div><div style="font-size:24px;font-bold">MSP TECNOLOGIA</div><div style="color:#2563eb;font-weight:bold">COMPROVANTE DE ORDEM DE SERVIÇO</div></div><div style="text-align:right;font-size:12px"><b>MSP Tecnologia & Assistência</b><br>Irecê - Bahia<br>Contato: (74) 99995-0922</div></div>
-            <div class="secao"><div class="secao-titulo">1. Identificação do Chamado</div><div class="grid"><div><b>Controle OS:</b> OS-${os.id}</div><div><b>Data Entrada:</b> ${os.data}</div><div><b>Situação:</b> ${os.status}</div><div><b>Técnico:</b> Maique Pereira</div></div></div>
+            <div class="secao"><div class="secao-titulo">1. Identificação do Chamado</div><div class="grid"><b>Controle OS:</b> OS-${os.id}</div><div><b>Data Entrada:</b> ${os.data}</div><div><b>Situação:</b> ${os.status}</div><div><b>Técnico:</b> Maique Pereira</div></div></div>
             <div class="secao"><div class="secao-titulo">2. Informações do Cliente</div><div class="grid"><div><b>Nome:</b> ${os.cliente}</div><div><b>Contato:</b> ${os.telefone}</div><div><b>CPF/CNPJ:</b> ${os.cpf}</div><div><b>Endereço:</b> ${os.local}</div></div></div>
             <div class="secao"><div class="secao-titulo">3. Equipamento</div><div class="grid"><div style="width:100%"><b>Descrição:</b> ${os.equipamento}</div></div></div>
             <div class="secao"><div class="secao-titulo">4. Ocorrência Relatada</div><div class="campo-texto">${os.defeito}</div></div>
