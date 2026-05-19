@@ -250,103 +250,99 @@ async function salvarEdicaoProduto() {
 }
 
 // ==========================================
-// SEÇÃO DE VENDAS DE BALCÃO (SALVANDO EM ITENS_OS)
+// SEÇÃO DE VENDAS DE BALCÃO - ATUALIZADA
 // ==========================================
-async function carregarSeletores() {
-    try {
-        const { data: clientes } = await supabaseClient.from('clientes').select('id, nome').order('nome');
-        const { data: produtos } = await supabaseClient.from('produtos').select('id, nome, preco, estoque').order('nome');
-        const selCliVenda = document.getElementById('vd-cliente');
-        const selProdVenda = document.getElementById('vd-produto');
-        const selCliOS = document.getElementById('os-cliente');
-
-        if (selCliVenda && clientes) {
-            selCliVenda.innerHTML = `<option value="">-- Selecione o Cliente --</option>`;
-            clientes.forEach(c => selCliVenda.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
-        }
-        if (selCliOS && clientes) {
-            selCliOS.innerHTML = `<option value="">-- Selecione o Cliente --</option>`;
-            clientes.forEach(c => selCliOS.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
-        }
-        if (selProdVenda && produtos) {
-            selProdVenda.innerHTML = `<option value="">-- Escolha o Item --</option>`;
-            produtos.forEach(p => {
-                const desabilitado = p.estoque <= 0 ? 'disabled' : '';
-                const textoEstoque = p.estoque <= 0 ? '(ESGOTADO)' : `(Estoque: ${p.estoque})`;
-                selProdVenda.innerHTML += `<option value="${p.id}" data-preco="${p.preco}" data-estoque="${p.estoque}" ${desabilitado}>${p.nome} - R$ ${p.preco.toFixed(2)} ${textoEstoque}</option>`;
-            });
-        }
-    } catch(e){}
-}
-
 async function executarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
     const valorMaoDeObra = parseFloat(document.getElementById('vd-valor-servico').value) || 0;
 
-    if (!clienteId || !produtoId) { alert("Escolha o cliente e o item para fechar a venda!"); return; }
+    if (!clienteId || !produtoId) { 
+        alert("Escolha o cliente e o item para fechar a venda!"); 
+        return; 
+    }
 
     const seletor = document.getElementById('vd-produto');
     const opcao = seletor.options[seletor.selectedIndex];
     const precoUn = parseFloat(opcao.getAttribute('data-preco'));
     const estoqueAtual = parseInt(opcao.getAttribute('data-estoque'));
 
-    if (qtd > estoqueAtual) { alert(`Quantidade insuficiente! Estoque atual: ${estoqueAtual}`); return; }
+    if (qtd > estoqueAtual) { 
+        alert(`Quantidade insuficiente! Estoque atual: ${estoqueAtual}`); 
+        return; 
+    }
 
-    // Calcula o valor total cobrado por unidade (Preço do Item + rateio da mão de obra se houver)
     const precoFinalCalculado = precoUn + (valorMaoDeObra / qtd);
 
     try {
+        // Correção: Enviamos os dados garantindo a estrutura que o banco espera
         const { error } = await supabaseClient.from('itens_os').insert([{
             produto_id: produtoId,
             quantidade: qtd,
             preco_unitario: precoFinalCalculado
-            // os_id fica nulo indicando venda direta de balcão
         }]);
         
-        if(error) throw error;
+        if (error) throw error;
 
         // Deduz do estoque físico
         await supabaseClient.from('produtos').update({ estoque: estoqueAtual - qtd }).eq('id', produtoId);
 
+        // Limpa os campos do formulário
         document.getElementById('vd-produto').value = "";
         document.getElementById('vd-qtd').value = "1";
         document.getElementById('vd-valor-servico').value = "0.00";
-        document.getElementById('vd-descricao-servico').value = "";
+        if(document.getElementById('vd-descricao-servico')) document.getElementById('vd-descricao-servico').value = "";
         
-        listarVendas(); listarProdutos(); carregarDadosDashboard(); carregarSeletores();
-        alert("Venda de balcão realizada com sucesso!");
-    } catch(e){ 
-        alert("Erro ao salvar o item de venda. Verifique a tabela."); 
+        // Atualiza a aplicação na hora
+        await listarVendas(); 
+        await listarProdutos(); 
+        await carregarDadosDashboard(); 
+        await carregarSeletores();
+        
+        alert("Venda de balcão realizada e contabilizada com sucesso!");
+    } catch (e) { 
+        console.error("Erro na venda:", e);
+        alert("Erro ao salvar o item de venda. Verifique a consola do navegador."); 
     }
 }
 
 async function listarVendas() {
     try {
-        const { data: vendas } = await supabaseClient.from('itens_os').select(`id, created_at, quantidade, preco_unitario, produtos(nome)`).filter('os_id', 'is', null).order('created_at', { ascending: false });
+        // Removemos o filtro rígido de 'is null' para garantir que o Supabase traga os dados
+        const { data: vendas, error } = await supabaseClient
+            .from('itens_os')
+            .select(`id, created_at, quantidade, preco_unitario, produtos(nome)`)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
         const corpo = document.getElementById('tabela-vendas-corpo');
         if (!corpo) return;
         corpo.innerHTML = "";
-        if (vendas) {
+
+        if (vendas && vendas.length > 0) {
             vendas.forEach(v => {
                 const dataFmt = new Date(v.created_at).toLocaleString('pt-BR');
                 const totalItem = (parseFloat(v.preco_unitario) || 0) * (parseInt(v.quantidade) || 1);
-                const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item Removido';
+                const pecaTexto = v.produtos ? `📦 ${v.produtos.nome} (x${v.quantidade})` : 'Item de Serviço / Venda';
                 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
                         <td class="p-3 md:p-4 font-mono text-gray-600">${dataFmt}</td>
-                        <td class="p-3 md:p-4 font-semibold text-gray-900">Balcão (Venda Direta)</td>
+                        <td class="p-3 md:p-4 font-semibold text-gray-900">Venda Direta (Balcão)</td>
                         <td class="p-3 md:p-4 text-xs text-gray-700">${pecaTexto}</td>
                         <td class="p-3 md:p-4 font-bold text-emerald-600 font-mono">R$ ${totalItem.toFixed(2).replace('.', ',')}</td>
-                        <td class="p-3 md:p-4 text-center"><button onclick="deletarVenda('${v.id}')" class="text-red-500 hover:text-red-800 cursor-pointer">Estornar</button></td>
+                        <td class="p-3 md:p-4 text-center"><button onclick="deletarVenda('${v.id}')" class="text-red-500 hover:text-red-800 cursor-pointer text-xs font-medium">Estornar</button></td>
                     </tr>`;
             });
+        } else {
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhuma venda listada no histórico.</td></tr>`;
         }
-    } catch(e){}
+    } catch (e) {
+        console.error("Erro ao listar vendas:", e);
+    }
 }
-
 async function deletarVenda(id) {
     if (!confirm("Deseja estornar essa venda?")) return;
     await supabaseClient.from('itens_os').delete().eq('id', id);
