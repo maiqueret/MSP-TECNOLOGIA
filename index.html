@@ -11,178 +11,181 @@
         window.SUPABASE_KEY = "sb_publishable_7KoK3QTF96mBuIVI4OdvkA_sZyWJqEn";
     </script>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-gray-100 font-sans text-gray-800 flex flex-col md:flex-row h-screen overflow-hidden">
 
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shadow-xl">
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shadow-xl shrink-0 z-40">
         <div>
-            <div class="p-5 bg-slate-950 flex items-center gap-3">
-                <span class="text-2xl">🛠️</span>
-                <div>
-                    <h2 class="text-white font-bold leading-tight text-sm">MSP Tecnologia</h2>
-                    <span class="text-xs text-green-400 font-medium flex items-center gap-1">
-                        <span class="h-2 w-2 rounded-full bg-green-400 block animate-pulse"></span> Banco Ativo
-                    </span>
+            <div class="p-4 md:p-5 bg-slate-950 flex items-center justify-between md:justify-start gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🛠️</span>
+                    <div>
+                        <h2 class="text-white font-bold leading-tight text-sm">MSP Tecnologia</h2>
+                        <span class="text-xs text-green-400 font-medium flex items-center gap-1">
+                            <span class="h-2 w-2 rounded-full bg-green-400 block animate-pulse"></span> Banco Ativo
+                        </span>
+                    </div>
                 </div>
+                <div class="text-xs text-slate-500 font-mono border border-slate-800 px-2 py-1 rounded md:hidden">MENU</div>
             </div>
 
-            <nav class="p-4 space-y-1">
-                <button onclick="mudarAba('dashboard')" id="btn-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium transition-all cursor-pointer">
+            <nav class="p-2 md:p-4 flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible whitespace-nowrap md:whitespace-normal scrollbar-none">
+                <button onclick="mudarAba('dashboard')" id="btn-dashboard" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg bg-blue-600 text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
                     <span>📊</span> Dashboard
                 </button>
-                <button onclick="mudarAba('clientes')" id="btn-clientes" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium transition-all cursor-pointer">
+                <button onclick="mudarAba('clientes')" id="btn-clientes" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
                     <span>👥</span> Clientes
                 </button>
-                <button onclick="mudarAba('produtos')" id="btn-produtos" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium transition-all cursor-pointer">
-                    <span>📦</span> Estoque de Peças
+                <button onclick="mudarAba('produtos')" id="btn-produtos" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                    <span>📦</span> Peças
                 </button>
-                <button onclick="mudarAba('vendas')" id="btn-vendas" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium transition-all cursor-pointer">
-                    <span>🛒</span> Venda Balcão (Serviço + Peça)
+                <button onclick="mudarAba('vendas')" id="btn-vendas" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                    <span>🛒</span> Balcão
                 </button>
-                <button onclick="mudarAba('ordens')" id="btn-ordens" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium transition-all cursor-pointer">
-                    <span>📋</span> Quadro de OS (Laboratório)
+                <button onclick="mudarAba('ordens')" id="btn-ordens" class="inline-flex md:flex w-auto md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-slate-800 hover:text-white font-medium text-xs md:text-sm transition-all cursor-pointer">
+                    <span>📋</span> Quadro OS
                 </button>
             </nav>
         </div>
-        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">v1.8.0</div>
+        <div class="hidden md:block p-4 border-t border-slate-800 text-xs text-slate-500 text-center">v1.8.1</div>
     </aside>
 
-    <div class="flex-1 flex flex-col h-screen overflow-y-auto">
+    <div class="flex-1 flex flex-col h-full overflow-y-auto">
         
-        <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-            <h1 id="titulo-pagina" class="text-xl font-bold text-gray-800">📊 Dashboard</h1>
-            <div id="status-conexao" class="text-sm font-medium bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">
-                ✅ Banco Conectado
+        <header class="bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shrink-0">
+            <h1 id="titulo-pagina" class="text-base md:text-xl font-bold text-gray-800">📊 Dashboard</h1>
+            <div id="status-conexao" class="text-xs font-medium bg-green-50 text-green-700 px-2 md:px-3 py-1 rounded-full border border-green-200">
+                ✅ Conectado
             </div>
         </header>
 
-        <main class="p-6 max-w-7xl w-full mx-auto">
+        <main class="p-3 md:p-6 max-w-7xl w-full mx-auto space-y-6">
             
-            <section id="tela-dashboard" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-4">
-                        <div class="p-4 bg-blue-100 text-blue-600 rounded-lg text-2xl">👥</div>
+            <section id="tela-dashboard" class="space-y-4 md:space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                        <div class="p-3 md:p-4 bg-blue-100 text-blue-600 rounded-lg text-xl md:text-2xl">👥</div>
                         <div>
-                            <p class="text-xs font-semibold text-gray-500 uppercase">Clientes Cadastrados</p>
-                            <h3 class="text-2xl font-bold mt-1" id="dash-qtd-clientes">0</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Clientes</p>
+                            <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-clientes">0</h3>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-4">
-                        <div class="p-4 bg-purple-100 text-purple-600 rounded-lg text-2xl">📦</div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                        <div class="p-3 md:p-4 bg-purple-100 text-purple-600 rounded-lg text-xl md:text-2xl">📦</div>
                         <div>
-                            <p class="text-xs font-semibold text-gray-500 uppercase">Itens no Estoque</p>
-                            <h3 class="text-2xl font-bold mt-1" id="dash-qtd-produtos">0</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">Itens Estoque</p>
+                            <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-produtos">0</h3>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-4">
-                        <div class="p-4 bg-yellow-100 text-yellow-600 rounded-lg text-2xl">⏳</div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 flex items-center gap-3 md:gap-4">
+                        <div class="p-3 md:p-4 bg-yellow-100 text-yellow-600 rounded-lg text-xl md:text-2xl">⏳</div>
                         <div>
-                            <p class="text-xs font-semibold text-gray-500 uppercase">OS Ativas no Lab</p>
-                            <h3 class="text-2xl font-bold mt-1" id="dash-qtd-os">0</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-gray-500 uppercase">OS Ativas</p>
+                            <h3 class="text-lg md:text-2xl font-bold mt-0.5" id="dash-qtd-os">0</h3>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-gradient-to-br from-cyan-600 to-blue-700 p-6 rounded-xl shadow-md flex items-center gap-4 text-white">
-                        <div class="p-4 bg-white/20 rounded-lg text-2xl">📅</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-gradient-to-br from-cyan-600 to-blue-700 p-4 md:p-6 rounded-xl shadow-md flex items-center gap-3 md:gap-4 text-white">
+                        <div class="p-3 md:p-4 bg-white/20 rounded-lg text-xl md:text-2xl">📅</div>
                         <div>
-                            <p class="text-xs font-semibold text-cyan-100 uppercase">Faturamento de Hoje</p>
-                            <h3 class="text-2xl font-extrabold mt-1" id="dash-faturamento-dia">R$ 0,00</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-cyan-100 uppercase">Faturamento de Hoje</p>
+                            <h3 class="text-lg md:text-2xl font-extrabold mt-0.5" id="dash-faturamento-dia">R$ 0,00</h3>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-xl shadow-md flex items-center gap-4 text-white">
-                        <div class="p-4 bg-white/20 rounded-lg text-2xl">📆</div>
+                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 p-4 md:p-6 rounded-xl shadow-md flex items-center gap-3 md:gap-4 text-white">
+                        <div class="p-3 md:p-4 bg-white/20 rounded-lg text-xl md:text-2xl">📆</div>
                         <div>
-                            <p class="text-xs font-semibold text-indigo-100 uppercase">Faturamento do Mês</p>
-                            <h3 class="text-2xl font-extrabold mt-1" id="dash-faturamento-mes">R$ 0,00</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-indigo-100 uppercase">Faturamento do Mês</p>
+                            <h3 class="text-lg md:text-2xl font-extrabold mt-0.5" id="dash-faturamento-mes">R$ 0,00</h3>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 p-6 rounded-xl shadow-md flex items-center gap-4 text-white">
-                        <div class="p-4 bg-white/20 rounded-lg text-2xl">💰</div>
+                    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 p-4 md:p-6 rounded-xl shadow-md flex items-center gap-3 md:gap-4 text-white">
+                        <div class="p-3 md:p-4 bg-white/20 rounded-lg text-xl md:text-2xl">💰</div>
                         <div>
-                            <p class="text-xs font-semibold text-emerald-100 uppercase">Faturamento Geral</p>
-                            <h3 class="text-2xl font-extrabold mt-1" id="dash-faturamento">R$ 0,00</h3>
+                            <p class="text-[10px] md:text-xs font-semibold text-emerald-100 uppercase">Faturamento Geral</p>
+                            <h3 class="text-lg md:text-2xl font-extrabold mt-0.5" id="dash-faturamento">R$ 0,00</h3>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section id="tela-clientes" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">👥 Cadastrar Novo Cliente</h3>
-                    <form id="form-cliente" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                    <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">👥 Cadastrar Novo Cliente</h3>
+                    <form id="form-cliente" class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome Completo</label>
-                            <input type="text" id="cli-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <input type="text" id="cli-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Telefone / WhatsApp</label>
-                            <input type="text" id="cli-telefone" placeholder="(74) 99999-9999" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <input type="text" id="cli-telefone" placeholder="(74) 99999-9999" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
                         <div class="flex items-end">
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-all shadow-xs cursor-pointer">Salvar Cliente</button>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm cursor-pointer shadow-xs transition-all">Salvar Cliente</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
-                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                        <h4 class="font-bold text-gray-700 text-sm">Clientes Cadastrados</h4>
-                        <input type="text" id="busca-cliente" oninput="listarClientes()" placeholder="🔎 Buscar cliente por nome..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full md:w-64 bg-white focus:outline-none focus:border-blue-500">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h4 class="font-bold text-gray-700 text-xs md:text-sm">Clientes Cadastrados</h4>
+                        <input type="text" id="busca-cliente" oninput="listarClientes()" placeholder="🔎 Buscar cliente..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full sm:w-64 bg-white focus:outline-none focus:border-blue-500">
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs font-bold border-b border-gray-200">
-                                    <th class="p-4">Nome</th>
-                                    <th class="p-4">Telefone</th>
-                                    <th class="p-4 text-center">Ações</th>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                    <th class="p-3 md:p-4">Nome</th>
+                                    <th class="p-3 md:p-4">Telefone</th>
+                                    <th class="p-3 md:p-4 text-center">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabela-clientes-corpo" class="text-sm divide-y divide-gray-100"></tbody>
+                            <tbody id="tabela-clientes-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
             <section id="tela-produtos" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📦 Cadastrar Produto / Peça</h3>
-                    <form id="form-produto" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="md:col-span-2">
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200">
+                    <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 md:mb-4">📦 Cadastrar Produto / Peça</h3>
+                    <form id="form-produto" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                        <div class="sm:col-span-2">
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Produto</label>
-                            <input type="text" id="prod-nome" required placeholder="Ex: SSD 240GB" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <input type="text" id="prod-nome" required placeholder="Ex: SSD 240GB" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Preço de Venda (R$)</label>
-                            <input type="number" id="prod-preco" step="0.01" required placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <input type="number" id="prod-preco" step="0.01" required placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Inicial</label>
-                            <input type="number" id="prod-estoque" required placeholder="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <input type="number" id="prod-estoque" required placeholder="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
-                        <div class="md:col-span-4 flex justify-end">
-                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg text-sm transition-all shadow-xs cursor-pointer">Salvar no Estoque</button>
+                        <div class="sm:col-span-2 md:col-span-4 flex justify-end">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg text-sm cursor-pointer shadow-xs transition-all w-full sm:w-auto">Salvar no Estoque</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
-                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                        <h4 class="font-bold text-gray-700 text-sm">Estoque Atual</h4>
-                        <input type="text" id="busca-produto" oninput="listarProdutos()" placeholder="🔎 Buscar produto..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full md:w-64 bg-white focus:outline-none focus:border-green-500">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h4 class="font-bold text-gray-700 text-xs md:text-sm">Estoque Atual</h4>
+                        <input type="text" id="busca-produto" oninput="listarProdutos()" placeholder="🔎 Buscar produto..." class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs w-full sm:w-64 bg-white focus:outline-none focus:border-green-500">
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs font-bold border-b border-gray-200">
-                                    <th class="p-4">Descrição do Item</th>
-                                    <th class="p-4">Preço Unitário</th>
-                                    <th class="p-4">Qtd em Estoque</th>
-                                    <th class="p-4 text-center">Ações</th>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                    <th class="p-3 md:p-4">Descrição do Item</th>
+                                    <th class="p-3 md:p-4">Preço Unitário</th>
+                                    <th class="p-3 md:p-4">Estoque</th>
+                                    <th class="p-3 md:p-4 text-center">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabela-produtos-corpo" class="text-sm divide-y divide-gray-100"></tbody>
+                            <tbody id="tabela-produtos-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
@@ -190,49 +193,51 @@
 
             <section id="tela-vendas" class="hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-xs border border-gray-200 space-y-4">
-                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">🛒 Fechamento de Venda</h3>
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 space-y-3 md:space-y-4 h-fit">
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">🛒 Fechamento de Venda</h3>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
                             <select id="vd-cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"></select>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Peça Aplicada (Se houver)</label>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Peça Aplicada</label>
                             <select id="vd-produto" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"></select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade da Peça</label>
-                            <input type="number" id="vd-qtd" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
+                                <input type="number" id="vd-qtd" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Mão de Obra (R$)</label>
+                                <input type="number" id="vd-valor-servico" step="0.01" value="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Valor do Serviço Técnico / Mão de Obra (R$)</label>
-                            <input type="number" id="vd-valor-servico" step="0.01" value="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Serviço Técnico</label>
+                            <textarea id="vd-descricao-servico" placeholder="Ex: Troca de SSD + Limpeza interna" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-16 bg-white"></textarea>
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Serviço Técnico Realizado</label>
-                            <textarea id="vd-descricao-servico" placeholder="Ex: Limpeza interna + Formatação Windows 11 Pro" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-16 bg-white"></textarea>
-                        </div>
-                        <button onclick="executarVendaBalcao()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-sm transition-all shadow-md cursor-pointer">
+                        <button onclick="executarVendaBalcao()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 md:py-3 px-4 rounded-lg text-xs md:text-sm cursor-pointer shadow-md transition-all">
                             💸 Confirmar Venda e Emitir Cupom
                         </button>
                     </div>
 
                     <div class="lg:col-span-2 bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
                         <div class="p-4 bg-gray-50 border-b border-gray-200">
-                            <h4 class="font-bold text-gray-700 text-sm">Histórico do Caixa de Balcão</h4>
+                            <h4 class="font-bold text-gray-700 text-xs md:text-sm">Histórico do Caixa de Balcão</h4>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
                                 <thead>
-                                    <tr class="bg-gray-100 text-gray-600 uppercase text-xs font-bold border-b border-gray-200">
-                                        <th class="p-4">Data / Hora</th>
-                                        <th class="p-4">Cliente</th>
-                                        <th class="p-4">Detalhamento / Serviço Realizado</th>
-                                        <th class="p-4">Total</th>
-                                        <th class="p-4 text-center">Ação</th>
+                                    <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                        <th class="p-3 md:p-4">Data / Hora</th>
+                                        <th class="p-3 md:p-4">Cliente</th>
+                                        <th class="p-3 md:p-4">Detalhamento / Serviço</th>
+                                        <th class="p-3 md:p-4">Total</th>
+                                        <th class="p-3 md:p-4 text-center">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabela-vendas-corpo" class="text-sm divide-y divide-gray-100"></tbody>
+                                <tbody id="tabela-vendas-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
                             </table>
                         </div>
                     </div>
@@ -241,50 +246,45 @@
 
             <section id="tela-ordens" class="hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-xs border border-gray-200 space-y-4">
-                        <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">📋 Entrada de Máquina</h3>
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-xs border border-gray-200 space-y-3 md:space-y-4 h-fit">
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">📋 Entrada de Máquina</h3>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Selecione o Cliente</label>
                             <select id="os-cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Situação Inicial</label>
-                            <select id="os-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-semibold text-slate-700">
-                                <option value="Em Análise">⏳ Em Análise (Entrada de máquina)</option>
-                                <option value="Em Andamento">🛠️ Em Andamento (Na bancada)</option>
-                                <option value="Aguardando Peça">📦 Aguardando Peça (Pedido pendente)</option>
-                                <option value="Concluido">✅ Concluído (Pronto / Testado)</option>
-                            </select>
+                            <select id="os-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-semibold text-slate-700"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Equipamento / Modelo</label>
                             <input type="text" id="os-equipamento" required placeholder="Ex: Impressora Epson L3150" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Serviço / Problema Ocorrido</label>
-                            <textarea id="os-descricao" required placeholder="Ex: Não puxa papel da bandeja, engasgando mecânica." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-24 bg-white"></textarea>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descrição do Chamado</label>
+                            <textarea id="os-descricao" required placeholder="Ex: Não liga, puxando papel torto." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-20 bg-white"></textarea>
                         </div>
-                        <button onclick="finalizarOperacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-lg text-sm transition-all shadow-md cursor-pointer">
+                        <button onclick="finalizarOperacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 md:py-3 px-4 rounded-lg text-xs md:text-sm cursor-pointer shadow-md transition-all">
                             📍 Abrir OS e Gerar Via A4
                         </button>
                     </div>
 
                     <div class="lg:col-span-3 bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
                         <div class="p-4 bg-gray-50 border-b border-gray-200">
-                            <h4 class="font-bold text-gray-700 text-sm">Quadro de Acompanhamento Técnico</h4>
+                            <h4 class="font-bold text-gray-700 text-xs md:text-sm">Quadro de Acompanhamento Técnico</h4>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left border-collapse min-w-[700px]">
                                 <thead>
-                                    <tr class="bg-gray-100 text-gray-600 uppercase text-xs font-bold border-b border-gray-200">
-                                        <th class="p-4">Registro</th>
-                                        <th class="p-4">Cliente</th>
-                                        <th class="p-4">Situação / Alterar com 1 Clique</th>
-                                        <th class="p-4">Aparelho / Descrição do Serviço</th>
-                                        <th class="p-4 text-center">Ficha A4</th>
+                                    <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs font-bold border-b border-gray-200">
+                                        <th class="p-3 md:p-4">Registro</th>
+                                        <th class="p-3 md:p-4">Cliente</th>
+                                        <th class="p-3 md:p-4">Situação / Ajuste Rápido</th>
+                                        <th class="p-3 md:p-4">Aparelho / Ocorrência</th>
+                                        <th class="p-3 md:p-4 text-center">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabela-ordens-corpo" class="text-sm divide-y divide-gray-100"></tbody>
+                                <tbody id="tabela-ordens-corpo" class="text-xs md:text-sm divide-y divide-gray-100"></tbody>
                             </table>
                         </div>
                     </div>
@@ -293,10 +293,11 @@
 
         </main>
     </div>
-<div id="modal-editar-produto" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
-        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+
+    <div id="modal-editar-produto" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                <h3 class="text-lg font-bold text-gray-800">✏️ Editar Produto / Peça</h3>
+                <h3 class="text-base md:text-lg font-bold text-gray-800">✏️ Editar Produto / Peça</h3>
                 <button onclick="fecharModalEditar()" class="text-gray-400 hover:text-gray-600 text-xl cursor-pointer">&times;</button>
             </div>
             <input type="hidden" id="edit-prod-id">
@@ -306,20 +307,21 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Preço de Venda (R$)</label>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Preço (R$)</label>
                     <input type="number" id="edit-prod-preco" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Qtd em Estoque</label>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque</label>
                     <input type="number" id="edit-prod-estoque" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
                 </div>
             </div>
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="fecharModalEditar()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg cursor-pointer">Cancelar</button>
-                <button onclick="salvarEdicaoProduto()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-xs cursor-pointer">Salvar Alterações</button>
+                <button onclick="fecharModalEditar()" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg cursor-pointer">Cancelar</button>
+                <button onclick="salvarEdicaoProduto()" class="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg cursor-pointer shadow-xs">Salvar</button>
             </div>
         </div>
     </div>
+
     <script src="index.js"></script>
 </body>
 </html>
