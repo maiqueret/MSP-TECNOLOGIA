@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO INICIAL DO SUPABASE
+// CONFIGURAÇÃO INICIAL DO SUPABASE (NOME ALTERADO PARA EVITAR CONFLITO GLOBAL)
 const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
 let usuarioLogado = null;
@@ -7,7 +7,7 @@ let usuarioLogado = null;
 document.addEventListener("DOMContentLoaded", async () => {
     const formLogin = document.getElementById("form-login");
     if (formLogin) {
-        formLogin.addEventListener("submit", executingLogin);
+        formLogin.addEventListener("submit", executarLogin);
     }
 
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -32,7 +32,7 @@ function toggleSenha() {
 }
 
 // EXECUÇÃO DO LOGIN
-async function executingLogin(e) {
+async function executarLogin(e) {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim();
     const senha = document.getElementById("login-senha").value;
@@ -117,7 +117,7 @@ async function verificarConexao() {
     }
 }
 
-// DASHBOARD CORRIGIDO - CONTABILIZANDO DA TABELA DE VENDAS_BALCAO
+// DASHBOARD GLOBAL - CONTABILIZANDO DA TABELA DE VENDAS_BALCAO
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
@@ -281,7 +281,7 @@ async function carregarSeletores() {
     } catch(e){}
 }
 
-async function executarVendaBalcao() {
+async function ejecutarVendaBalcao() {
     const clienteId = document.getElementById('vd-cliente').value;
     const produtoId = document.getElementById('vd-produto').value;
     const qtd = parseInt(document.getElementById('vd-qtd').value) || 1;
@@ -439,7 +439,7 @@ function imprimirReciboVenda(v) {
 }
 
 // ==========================================
-// SEÇÃO DE ORDENS DE SERVIÇO (COM LAUDO A4)
+// SEÇÃO DE ORDENS DE SERVIÇO (COM LAUDO A4 FIXO)
 // ==========================================
 async function finalizarOperacao() {
     const clienteId = document.getElementById('os-cliente').value;
@@ -471,11 +471,15 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        const { data: ordens } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone)`).order('created_at', { ascending: false });
+        const { data: ordens, error } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone)`).order('created_at', { ascending: false });
+        
+        if (error) throw error;
+
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return;
         corpo.innerHTML = "";
-        if (ordens) {
+
+        if (ordens && ordens.length > 0) {
             ordens.forEach(o => {
                 const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
                 let badgeColor = "bg-gray-100 text-gray-800";
@@ -483,14 +487,13 @@ async function listarOrdens() {
                 if (o.status === "Aguardando Peça") badgeColor = "bg-purple-100 text-purple-800";
                 if (o.status === "Concluido") badgeColor = "bg-green-100 text-green-800";
 
-                // Objeto contendo os dados da OS formatados para injeção no HTML de impressão
                 const dadosOSPrint = JSON.stringify({
                     id: o.id,
                     data: dataFmt,
                     cliente: o.clientes?.nome || 'Não informado',
                     telefone: o.clientes?.telefone || 'Não informado',
-                    equipamento: o.descricao_equipamento,
-                    defeito: o.defeito_relatado,
+                    equipamento: o.descricao_equipamento || 'Não informado',
+                    defeito: o.defeito_relatado || 'Não informado',
                     status: o.status
                 }).replace(/"/g, '&quot;');
 
@@ -513,8 +516,12 @@ async function listarOrdens() {
                         </td>
                     </tr>`;
             });
+        } else {
+            corpo.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Nenhum registro no quadro de acompanhamento técnico.</td></tr>`;
         }
-    } catch(e){}
+    } catch(e){
+        console.error("Erro ao listar ordens:", e);
+    }
 }
 
 async function atualizarStatusOS(id, novoStatus) {
@@ -522,10 +529,9 @@ async function atualizarStatusOS(id, novoStatus) {
     listarOrdens(); carregarDadosDashboard();
 }
 
-// FUNÇÃO PARA GERAR A IMPRESSÃO DE ORDEM DE SERVIÇO EM TAMANHO A4
 function imprimirLaudoOS(os) {
-    const janelaLaudo = window.open('', '', 'width=800,height=900');
-    janelaLaudo.document.write(`
+    const windowLaudo = window.open('', '', 'width=800,height=900');
+    windowLaudo.document.write(`
         <html>
         <head>
             <title>Ordem de Serviço - MSP Tecnologia</title>
@@ -535,8 +541,8 @@ function imprimirLaudoOS(os) {
                 .titulo { font-size: 24px; font-weight: bold; color: #1e293b; }
                 .info-empresa { text-align: right; font-size: 12px; color: #64748b; }
                 .secao { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-                .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; tracking-wider }
-                .grid { display: grid; grid-cols: 2; display: flex; justify-content: space-between; flex-wrap: wrap; }
+                .secao-titulo { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 10px; }
+                .grid { display: flex; justify-content: space-between; flex-wrap: wrap; }
                 .grid div { width: 48%; margin-bottom: 10px; font-size: 14px; }
                 .campo-texto { min-height: 80px; font-size: 14px; background: white; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 4px; }
                 .assinaturas { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; font-size: 12px; }
@@ -607,7 +613,7 @@ function imprimirLaudoOS(os) {
         </body>
         </html>
     `);
-    janelaLaudo.document.close();
+    windowLaudo.document.close();
 }
 
 // ==========================================
