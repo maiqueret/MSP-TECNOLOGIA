@@ -471,7 +471,11 @@ async function finalizarOperacao() {
 
 async function listarOrdens() {
     try {
-        const { data: ordens, error } = await supabaseClient.from('ordens_servico').select(`id, status, descricao_equipamento, defeito_relatado, created_at, clientes(nome, telefone)`).order('created_at', { ascending: false });
+        // Busca simplificada direta na tabela de ordens
+        const { data: ordens, error } = await supabaseClient
+            .from('ordens_servico')
+            .select('*')
+            .order('created_at', { ascending: false });
         
         if (error) throw error;
 
@@ -481,37 +485,29 @@ async function listarOrdens() {
 
         if (ordens && ordens.length > 0) {
             ordens.forEach(o => {
-                const dataFmt = new Date(o.created_at).toLocaleDateString('pt-BR');
+                const dataFmt = o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : 'S/D';
                 
-                // NORMALIZAÇÃO DE SEGURANÇA CONTRA QUALQUER DIFERENÇA DE ACENTO OU CAIXA NO BANCO
-                const statusLimpo = (o.status || "")
-                    .trim()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .toLowerCase();
-
+                // Normalização simples do status
+                const statusLimpo = (o.status || "").trim().toLowerCase();
                 let valorSelect = "Em Análise";
-                let badgeColor = "bg-gray-100 text-gray-800"; // Cinza padrão
+                let badgeColor = "bg-gray-100 text-gray-800"; 
 
-                if (statusLimpo.includes("analise")) {
-                    valorSelect = "Em Análise";
-                    badgeColor = "bg-gray-100 text-gray-800";
-                } else if (statusLimpo.includes("andamento") || statusLimpo.includes("bancada")) {
+                if (statusLimpo.includes("andamento") || statusLimpo.includes("bancada")) {
                     valorSelect = "Em Andamento";
-                    badgeColor = "bg-amber-100 text-amber-800"; // Amarelo
+                    badgeColor = "bg-amber-100 text-amber-800"; 
                 } else if (statusLimpo.includes("peca") || statusLimpo.includes("sem")) {
                     valorSelect = "Aguardando Peça";
-                    badgeColor = "bg-purple-100 text-purple-800"; // Roxo
+                    badgeColor = "bg-purple-100 text-purple-800"; 
                 } else if (statusLimpo.includes("concluid") || statusLimpo.includes("pronto")) {
                     valorSelect = "Concluido";
-                    badgeColor = "bg-green-100 text-green-800"; // Verde
+                    badgeColor = "bg-green-100 text-green-800"; 
                 }
 
                 const dadosOSPrint = JSON.stringify({
                     id: o.id,
                     data: dataFmt,
-                    cliente: o.clientes?.nome || 'Não informado',
-                    telefone: o.clientes?.telefone || 'Não informado',
+                    cliente: 'Cliente ID: ' + (o.cliente_id || 'N/A'),
+                    telefone: 'Ver cadastro',
                     equipamento: o.descricao_equipamento || 'Não informado',
                     defeito: o.defeito_relatado || 'Não informado',
                     status: o.status || 'Em Análise'
@@ -519,8 +515,8 @@ async function listarOrdens() {
 
                 corpo.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-100">
-                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).substring(0,4).toUpperCase()}<br><span class="text-[10px]">${dataFmt}</span></td>
-                        <td class="p-3 md:p-4 font-bold text-gray-900">${o.clientes?.nome || 'Excluído'}</td>
+                        <td class="p-3 md:p-4 font-mono text-gray-500">OS-${String(o.id).toUpperCase()}</td>
+                        <td class="p-3 md:p-4 font-bold text-gray-900">Cliente (Cód: ${o.cliente_id || '?'})</td>
                         <td class="p-3 md:p-4">
                             <select onchange="atualizarStatusOS('${o.id}', this.value)" class="text-xs font-semibold px-2 py-1 rounded-md border border-gray-200 ${badgeColor} focus:outline-none cursor-pointer">
                                 <option value="Em Análise" ${valorSelect === 'Em Análise' ? 'selected' : ''}>⏳ Em Análise</option>
@@ -529,7 +525,7 @@ async function listarOrdens() {
                                 <option value="Concluido" ${valorSelect === 'Concluido' ? 'selected' : ''}>✅ Concluído</option>
                             </select>
                         </td>
-                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento}</span><br><span class="text-gray-500">${o.defeito_relatado}</span></td>
+                        <td class="p-3 md:p-4 text-xs"><span class="font-semibold text-slate-800">${o.descricao_equipamento || 'N/A'}</span><br><span class="text-gray-500">${o.defeito_relatado || 'N/A'}</span></td>
                         <td class="p-3 md:p-4 text-center space-x-1 whitespace-nowrap">
                             <button onclick="imprimirLaudoOS(${dadosOSPrint})" class="text-blue-600 hover:text-blue-900 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 cursor-pointer">🖨️ Via A4</button>
                             <button onclick="deletarItem('ordens_servico', '${o.id}', listarOrdens)" class="text-red-500 hover:text-red-800 cursor-pointer text-xs">Remover</button>
