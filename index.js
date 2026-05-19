@@ -94,6 +94,7 @@ function mudarAba(aba) {
     document.getElementById('titulo-pagina').innerText = aba === 'dashboard' ? "📊 Dashboard" : aba === 'clientes' ? "👥 Clientes" : aba === 'produtos' ? "📦 Estoque Peças" : aba === 'vendas' ? "🛒 Balcão Caixa" : aba === 'ordens' ? "📋 Ordens Serv." : "📈 Relatórios";
 }
 
+// TESTE DE CONEXÃO
 async function verificarConexao() {
     try {
         await supabaseClient.from('clientes').select('id').limit(1);
@@ -103,6 +104,7 @@ async function verificarConexao() {
     }
 }
 
+// ATUALIZAÇÃO DO DASHBOARD
 async function carregarDadosDashboard() {
     try {
         const { count: qtdClientes } = await supabaseClient.from('clientes').select('*', { count: 'exact', head: true });
@@ -150,7 +152,7 @@ if (document.getElementById('form-cliente')) {
         const endereco = document.getElementById('cli-endereco').value;
         const cidade = document.getElementById('cli-cidade').value;
 
-        await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj, endereco, cidade }]);
+        await supabaseClient.from('clientes').insert([{ nome, telefone, cpf_cnpj, endereco, city: cidade }]);
         document.getElementById('form-cliente').reset();
         listarClientes(); carregarDadosDashboard(); carregarSeletores();
     });
@@ -170,7 +172,7 @@ async function listarClientes() {
                         <tr class="hover:bg-gray-50 border-b border-gray-100">
                             <td class="p-3 md:p-4 font-medium text-gray-900">${c.nome}</td>
                             <td class="p-3 md:p-4 text-slate-600 font-mono text-xs">${c.cpf_cnpj || 'Sem registro'}</td>
-                            <td class="p-3 md:p-4 text-xs text-gray-500">📍 ${c.endereco || ''} - ${c.cidade || ''}<br>📞 ${c.telefone || 'S/T'}</td>
+                            <td class="p-3 md:p-4 text-xs text-gray-500">📍 ${c.endereco || ''} - ${c.city || ''}<br>📞 ${c.telefone || 'S/T'}</td>
                             <td class="p-3 md:p-4 text-center"><button onclick="deletarItem('clientes', '${c.id}', listarClientes)" class="text-red-600 hover:text-red-900 font-medium cursor-pointer px-2 py-1 rounded hover:bg-red-50">Excluir</button></td>
                         </tr>`;
                 }
@@ -376,7 +378,7 @@ async function listarOrdens() {
         const { data: ordens, error: erroOS } = await supabaseClient.from('ordens_servico').select('*').order('created_at', { ascending: false });
         if (erroOS) throw erroOS;
 
-        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj, endereco, city:cidade');
+        const { data: clientesLista } = await supabaseClient.from('clientes').select('id, nome, telefone, cpf_cnpj, endereco, city');
 
         const corpo = document.getElementById('tabela-ordens-corpo');
         if (!corpo) return; 
